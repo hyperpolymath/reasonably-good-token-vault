@@ -1,0 +1,85 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-FileCopyrightText: 2025 Hyperpolymath
+#
+# Echidna Configuration for Svalinn Vault Validation
+
+# Test mode
+testMode: property
+
+# Number of test runs
+testLimit: 100000
+
+# Sequence length
+seqLen: 100
+
+# Contract to test
+contractAddr: "0x0000000000000000000000000000000000000000"
+
+# Corpus directory for fuzzing
+corpusDir: "validation/corpus"
+
+# Coverage tracking
+coverage: true
+coverageFormats:
+  - html
+  - lcov
+
+# Assertion mode
+checkAsserts: true
+
+# Property testing
+properties:
+  - "echidna_vault_locked_for_sensitive_ops"
+  - "echidna_mfa_required_for_access"
+  - "echidna_unlock_attempts_bounded"
+  - "echidna_sealed_vault_permanent"
+  - "echidna_timelock_respected"
+  - "echidna_audit_append_only"
+  - "echidna_audit_integrity"
+  - "echidna_identity_access_logged"
+  - "echidna_no_phantom_access"
+
+# Shrinking
+shrinkLimit: 5000
+
+# Workers (parallel testing)
+workers: 4
+
+# Seed for reproducibility
+seed: 0
+
+# Gas limit
+gasLimit: 12500000
+
+# Block gas limit
+blockGasLimit: 125000000
+
+# Timeout per test (seconds)
+timeout: 300
+
+# Output
+format: text
+quiet: false
+
+# Filtering
+filterBlacklist: true
+filterFunctions:
+  - "echidna_"  # Don't fuzz property functions
+
+# Sender addresses for testing
+sender:
+  - "0x1000000000000000000000000000000000000000"
+  - "0x2000000000000000000000000000000000000000"
+  - "0x3000000000000000000000000000000000000000"
+
+# Multi-ABI mode
+multiAbi: false
+
+# Balance configuration
+balanceContract: 0xffffffff
+balanceAddr: 0xffffffff
+
+# Deployment configuration
+deployContracts:
+  - contractName: SvalinnSecurityProperties
+    contractAddr: "0x0000000000000000000000000000000000000001"

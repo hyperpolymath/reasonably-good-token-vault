@@ -1,0 +1,47 @@
+;; SPDX-License-Identifier: AGPL-3.0-or-later
+;; SPDX-FileCopyrightText: 2025 Hyperpolymath
+;;
+;; XTDB Configuration for Svalinn Identity Search
+;;
+;; Security model:
+;; - XTDB provides search/indexing ONLY
+;; - NO direct access to CUBS database
+;; - All data passes through polymorphic/metamorphic layers
+;; - Hostile environment assumed at all times
+
+{:xtdb/index-store
+ {:kv-store {:xtdb/module 'xtdb.rocksdb/->kv-store
+             :db-dir "/vault/xtdb/indexes"
+             :block-cache-size (* 64 1024 1024)  ; 64 MiB
+             :metrics-enabled? true}}
+
+ :xtdb/document-store
+ {:kv-store {:xtdb/module 'xtdb.rocksdb/->kv-store
+             :db-dir "/vault/xtdb/documents"
+             :block-cache-size (* 128 1024 1024)  ; 128 MiB
+             :compression :lz4}}
+
+ :xtdb/tx-log
+ {:kv-store {:xtdb/module 'xtdb.rocksdb/->kv-store
+             :db-dir "/vault/xtdb/tx-log"
+             :sync? true}}  ; Sync on every write for durability
+
+ ;; Query engine configuration
+ :xtdb.query/query-timeout 30000  ; 30 second timeout
+
+ ;; Security: Aggressive resource limits
+ :xtdb.query/entity-cache-size 1000
+ :xtdb.query/query-cache-size 100
+
+ ;; Metrics for monitoring
+ :xtdb.metrics/metrics-enabled true
+
+ ;; HTTP server disabled - only programmatic access
+ :xtdb.http-server/server nil
+
+ ;; Custom indexer for agrep-style fuzzy search
+ :svalinn/fuzzy-indexer
+ {:enabled true
+  :max-edit-distance 2
+  :min-term-length 3
+  :index-path "/vault/xtdb/fuzzy-index"}}

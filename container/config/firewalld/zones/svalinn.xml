@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
+<!-- SPDX-FileCopyrightText: 2025 Hyperpolymath -->
+<!--
+  Svalinn Vault Firewall Zone
+
+  Security policy:
+  - IPv6 only (IPv4 completely blocked)
+  - Minimal port exposure
+  - WireGuard tunnel required
+  - All other traffic dropped
+-->
+<zone target="DROP">
+  <short>Svalinn Vault</short>
+  <description>
+    Highly restrictive zone for Svalinn identity vault.
+    Only IPv6 traffic over WireGuard is permitted.
+    All IPv4 traffic is blocked.
+  </description>
+
+  <!-- IPv6 only - reject all IPv4 -->
+  <rule family="ipv4">
+    <drop/>
+    <log prefix="SVALINN-IPv4-BLOCK: " level="warning"/>
+  </rule>
+
+  <!-- Allow WireGuard tunnel (IPv6 only) -->
+  <rule family="ipv6">
+    <port protocol="udp" port="51820"/>
+    <accept/>
+    <log prefix="SVALINN-WG: " level="info"/>
+  </rule>
+
+  <!-- Allow vault API over WireGuard (IPv6 only) -->
+  <rule family="ipv6">
+    <port protocol="tcp" port="8443"/>
+    <accept/>
+    <log prefix="SVALINN-API: " level="info"/>
+  </rule>
+
+  <!-- Allow ICMPv6 for network functionality -->
+  <rule family="ipv6">
+    <icmp-type name="destination-unreachable"/>
+    <accept/>
+  </rule>
+  <rule family="ipv6">
+    <icmp-type name="packet-too-big"/>
+    <accept/>
+  </rule>
+  <rule family="ipv6">
+    <icmp-type name="time-exceeded"/>
+    <accept/>
+  </rule>
+  <rule family="ipv6">
+    <icmp-type name="echo-request"/>
+    <accept limit value="10/s"/>
+  </rule>
+  <rule family="ipv6">
+    <icmp-type name="echo-reply"/>
+    <accept limit value="10/s"/>
+  </rule>
+  <rule family="ipv6">
+    <icmp-type name="neighbour-solicitation"/>
+    <accept/>
+  </rule>
+  <rule family="ipv6">
+    <icmp-type name="neighbour-advertisement"/>
+    <accept/>
+  </rule>
+
+  <!-- Block all other traffic -->
+  <rule>
+    <drop/>
+    <log prefix="SVALINN-DROP: " level="warning"/>
+  </rule>
+</zone>
