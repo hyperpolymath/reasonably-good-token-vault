@@ -2,92 +2,288 @@
 // SPDX-FileCopyrightText: 2025 Jonathan D.A. Jewell
 = Svalinn Vault
 :toc: preamble
-:toclevels: 3
+:toclevels: 4
 :icons: font
 :source-highlighter: rouge
+:sectnums:
+:sectnumlevels: 4
 
-Secure identity storage with post-quantum cryptography for SSH keys, PGP keys, PATs, and API credentials.
+*Post-Quantum Secure Identity Vault for Hostile Environments*
 
 [IMPORTANT]
 ====
-*HOSTILE ENVIRONMENT ASSUMED AT ALL TIMES*
+*MAXIMUM SECURITY POSTURE - HOSTILE ENVIRONMENT ASSUMED*
 
-This vault treats all external systems as potentially compromised.
+This vault assumes all external systems, networks, and operators are potentially compromised. Trust nothing. Verify everything.
 ====
 
-== Overview
+[WARNING]
+====
+*DUAL-USE TECHNOLOGY NOTICE*
 
-Svalinn Vault provides military-grade protection for digital identities using:
+This software implements advanced cryptographic and security measures that may have dual-use implications. Users are solely responsible for compliance with applicable laws and regulations in their jurisdiction. See <<liability-disclaimer>>.
+====
 
-* *Post-Quantum Cryptography*: Kyber-1024 key encapsulation, Dilithium5 signatures
-* *Classical Cryptography*: AES-256-GCM, BLAKE3, SHAKE3-256, Ed448
-* *Memory-Hard KDF*: Argon2id with 64 MiB minimum memory
-* *Time-Locking*: UTC-based access windows with schedule enforcement
-* *MFA*: TOTP with anti-AI CAPTCHA challenges
-* *Code Obfuscation*: Quantum-seeded polymorphic/metamorphic transformation on lock
+== Executive Summary
 
-=== Supported Identity Types
+Svalinn Vault is a maximally secure identity storage system designed for storing and managing:
 
-[cols="1,2"]
+* SSH key pairs (Ed25519, ECDSA, RSA)
+* PGP/GPG keys
+* Personal Access Tokens (PATs)
+* REST/GraphQL/gRPC/XPC API credentials
+* OAuth2/JWT tokens
+* X.509 certificates
+* Decentralized Identifiers (DIDs)
+* WireGuard private keys
+
+=== Key Security Properties
+
+[cols="2,4"]
 |===
-|Type |Description
+|Property |Implementation
 
-|`ssh` |SSH key pairs (Ed25519, ECDSA, RSA)
-|`pgp` |PGP/GPG keys
-|`pat` |Personal Access Tokens
-|`rest-api` |REST API credentials
-|`graphql-api` |GraphQL API credentials
-|`grpc-api` |gRPC API credentials
-|`xpc` |XPC service credentials (Darwin)
-|`x509` |X.509 certificates
-|`did` |Decentralized Identifiers
-|`oauth2` |OAuth2 tokens
-|`jwt` |JWT tokens
-|`wireguard` |WireGuard private keys
+|*Post-Quantum Resistance*
+|Kyber-1024 (ML-KEM), Dilithium5 (ML-DSA), hybrid classical+PQ
+
+|*Memory Hardness*
+|Argon2id with 64 MiB memory, 4 iterations, 4 parallel lanes
+
+|*Authenticated Encryption*
+|AES-256-GCM with BLAKE3 key derivation
+
+|*Time-Locking*
+|UTC-synchronized access windows with sub-second precision
+
+|*Multi-Factor Authentication*
+|TOTP + anti-AI CAPTCHA + post-quantum challenges
+
+|*Code Obfuscation*
+|Quantum-seeded polymorphic/metamorphic transformation on lock
+
+|*Network Isolation*
+|IPv6 only, IPv4 complete lockdown, AirVPN via WireGuard
+
+|*Data Isolation*
+|Chroot jail, chmod 000 on lock, SELinux type enforcement
+
+|*GUID-Based Storage*
+|All credentials stored as GUIDs, assembled only at delivery
+
 |===
 
-== Security Architecture
+== Architecture
+
+=== Container Architecture
+
+[source]
+----
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                            HOST SYSTEM (CoreOS)                               │
+│  SELinux Enforcing │ firewalld (IPv4 DROP) │ IPv6 Only │ AirVPN WireGuard    │
+├──────────────────────────────────────────────────────────────────────────────┤
+│                                                                               │
+│  ┌─────────────────────────────────────────────────────────────────────────┐ │
+│  │                    DELIVERY CONTAINER (Assembly Zone)                    │ │
+│  │                                                                          │ │
+│  │  ┌──────────────────────┐    ┌──────────────────────────────────────┐   │ │
+│  │  │    Cadre Router      │    │         Credential Assembler         │   │ │
+│  │  │  (Reverse Proxy)     │◄───│  - GUID → Name Resolution            │   │ │
+│  │  │  - No version info   │    │  - Variable Redaction Removal        │   │ │
+│  │  │  - Stripped headers  │    │  - Final Encryption for Delivery     │   │ │
+│  │  │  - TLS 1.3 only      │    │  - Fragments → Complete Credential   │   │ │
+│  │  └──────────────────────┘    └──────────────────────────────────────┘   │ │
+│  │                                          ▲                               │ │
+│  │                                          │ API Socket Only               │ │
+│  └──────────────────────────────────────────┼───────────────────────────────┘ │
+│                                             │                                 │
+│  ┌──────────────────────────────────────────┼───────────────────────────────┐ │
+│  │                      DATA CONTAINER (Chroot Jail)                        │ │
+│  │                      chmod 000 when locked                               │ │
+│  │                      NO FOLDER CREATION                                  │ │
+│  │                                          │                               │ │
+│  │  ┌───────────────────────────────────────▼───────────────────────────┐  │ │
+│  │  │                      RUST VAULT CORE                               │  │ │
+│  │  │  ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────────┐  │  │ │
+│  │  │  │Argon2id │ │Kyber    │ │Dilithium│ │ Ed448   │ │ Polymorphic │  │  │ │
+│  │  │  │64 MiB   │ │1024     │ │   5     │ │         │ │ Transform   │  │  │ │
+│  │  │  └─────────┘ └─────────┘ └─────────┘ └─────────┘ └─────────────┘  │  │ │
+│  │  │  ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────────┐  │  │ │
+│  │  │  │AES-256  │ │ BLAKE3  │ │SHAKE3   │ │  QRNG   │ │Metamorphic  │  │  │ │
+│  │  │  │  GCM    │ │  Hash   │ │  XOF    │ │ Decoys  │ │ Evolution   │  │  │ │
+│  │  │  └─────────┘ └─────────┘ └─────────┘ └─────────┘ └─────────────┘  │  │ │
+│  │  └───────────────────────────────────────────────────────────────────┘  │ │
+│  │                          │                                              │ │
+│  │         ┌────────────────┼────────────────┐                            │ │
+│  │         ▼                ▼                ▼                            │ │
+│  │  ┌───────────┐    ┌───────────┐    ┌───────────┐                      │ │
+│  │  │   CUBS    │    │   XTDB    │    │ Dragonfly │                      │ │
+│  │  │   Flat    │◄───│  Search   │    │   Cache   │                      │ │
+│  │  │  Storage  │    │ (agrep)   │    │           │                      │ │
+│  │  │  (GUIDs)  │    │           │    │           │                      │ │
+│  │  └───────────┘    └───────────┘    └───────────┘                      │ │
+│  │                                                                        │ │
+│  │  ALL DATA STORED AS GUIDs - Names/Variables REDACTED until delivery   │ │
+│  └────────────────────────────────────────────────────────────────────────┘ │
+│                                                                               │
+│  ┌────────────────────────────────────────────────────────────────────────┐  │
+│  │                        IPv4 HONEYPOT LAYER                             │  │
+│  │   Ports: 22, 23, 80, 443, 3306, 3389, 5432, 5900, 6379, 27017         │  │
+│  │   All connections logged │ Alerts on suspicious patterns               │  │
+│  └────────────────────────────────────────────────────────────────────────┘  │
+│                                                                               │
+└──────────────────────────────────────────────────────────────────────────────┘
+----
+
+=== GUID-Based Storage with Redaction
+
+All credentials are stored as GUIDs (Universally Unique Identifiers) with full redaction:
 
 [source]
 ----
 ┌─────────────────────────────────────────────────────────────────┐
-│                     SVALINN VAULT                                │
+│                    DATA CONTAINER (CUBS)                         │
+│                    FLAT STRUCTURE - NO FOLDERS                   │
 ├─────────────────────────────────────────────────────────────────┤
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────────┐  │
-│  │   Ada CLI   │  │  ReScript   │  │    Guile Scheme         │  │
-│  │     /TUI    │  │  Interface  │  │   (USERMEMORY.scm)      │  │
-│  └──────┬──────┘  └──────┬──────┘  └───────────┬─────────────┘  │
-│         │                │                      │                │
-│         └────────────────┼──────────────────────┘                │
-│                          ▼                                       │
-│  ┌───────────────────────────────────────────────────────────┐  │
-│  │                    RUST VAULT CORE                         │  │
-│  │  ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────────────┐  │  │
-│  │  │Argon2id │ │Kyber1024│ │Dilithium│ │ Polymorphic     │  │  │
-│  │  │   KDF   │ │   KEM   │ │   Sig   │ │ Obfuscation     │  │  │
-│  │  └─────────┘ └─────────┘ └─────────┘ └─────────────────┘  │  │
-│  │  ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────────────┐  │  │
-│  │  │AES-256  │ │ BLAKE3  │ │SHAKE3   │ │ QRNG + Decoys   │  │  │
-│  │  │  GCM    │ │  Hash   │ │  XOF    │ │                 │  │  │
-│  │  └─────────┘ └─────────┘ └─────────┘ └─────────────────┘  │  │
-│  └───────────────────────────────────────────────────────────┘  │
-│                          │                                       │
-│         ┌────────────────┼────────────────┐                     │
-│         ▼                ▼                ▼                     │
-│  ┌───────────┐    ┌───────────┐    ┌───────────┐               │
-│  │   CUBS    │    │   XTDB    │    │ Dragonfly │               │
-│  │ Database  │◄───│  Search   │    │   Cache   │               │
-│  └───────────┘    └───────────┘    └───────────┘               │
+│                                                                  │
+│  ┌──────────────────────────────────────────────────────────┐   │
+│  │ GUID: a7f2c3d4-e5b6-4a8c-9d0e-f1a2b3c4d5e6               │   │
+│  │ Type: [REDACTED:0x4A]                                     │   │
+│  │ Name: [REDACTED:BLAKE3:7f3a...]                           │   │
+│  │ Host: [REDACTED:BLAKE3:8e2b...]                           │   │
+│  │ Data: [ENCRYPTED:KYBER+AES:...]                           │   │
+│  │ Meta: [ENCRYPTED:FRAGMENT:3/7]                            │   │
+│  └──────────────────────────────────────────────────────────┘   │
+│                                                                  │
+│  ┌──────────────────────────────────────────────────────────┐   │
+│  │ GUID: b8c3d4e5-f6a7-5b9d-0e1f-a2b3c4d5e6f7               │   │
+│  │ Type: [REDACTED:0x7B]                                     │   │
+│  │ Name: [REDACTED:BLAKE3:2c4d...]                           │   │
+│  │ Data: [ENCRYPTED:KYBER+AES:...]                           │   │
+│  │ Meta: [ENCRYPTED:FRAGMENT:5/7]                            │   │
+│  └──────────────────────────────────────────────────────────┘   │
+│                                                                  │
+│  XTDB indexes GUIDs only - searches by GUID or hash patterns    │
+│  CANNOT search by name without GUID → hash lookup table access  │
+│                                                                  │
 └─────────────────────────────────────────────────────────────────┘
-                          │
-                          ▼
-            ┌─────────────────────────┐
-            │   IPv6 Only + AirVPN   │
-            │   (WireGuard SDP)       │
-            └─────────────────────────┘
+
+                              │
+                              │ API Request with Valid Auth
+                              ▼
+
+┌─────────────────────────────────────────────────────────────────┐
+│                   DELIVERY CONTAINER (Assembly)                  │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  1. Receive GUID from authenticated request                     │
+│  2. Fetch fragments from data container via API socket          │
+│  3. Assemble fragments into complete credential                 │
+│  4. Resolve GUID → actual name from encrypted lookup table      │
+│  5. Remove variable redaction                                   │
+│  6. Re-encrypt for transport with session key                   │
+│  7. Deliver assembled credential                                │
+│  8. Zero all memory immediately after delivery                  │
+│                                                                  │
+│  CREDENTIAL ONLY EXISTS IN COMPLETE FORM WITHIN THIS CONTAINER  │
+│  AND ONLY FOR THE DURATION OF THE DELIVERY OPERATION            │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
 ----
 
+=== Why This Architecture?
+
+[cols="1,3"]
+|===
+|Design Decision |Security Rationale
+
+|*No folder creation in data container*
+|Flat GUID storage prevents directory traversal attacks, makes enumeration impossible without XTDB access, eliminates filesystem-based metadata leakage
+
+|*GUID-only storage*
+|Even with full database access, attacker sees only GUIDs - no correlation to actual credential names or purposes without the encrypted lookup table
+
+|*Redaction until delivery*
+|Names and variables only exist momentarily in the delivery container - never persisted in unredacted form
+
+|*Two-container separation*
+|Compromising the data container yields only encrypted GUID fragments; compromising delivery container yields only transient assembled credentials
+
+|*XTDB search requirement*
+|Cannot brute-force search for "github" or "aws" - must have XTDB access AND the GUID→hash lookup, making API reconnaissance extremely difficult
+
+|*Assembly in delivery container*
+|Complete credentials never exist in the data container - only fragments with no context
+
+|===
+
+== Cryptographic Stack
+
+=== Key Derivation
+
+[source,rust]
+----
+// Argon2id configuration - OWASP minimum exceeded
+Argon2id {
+    memory_kib: 65536,     // 64 MiB (OWASP minimum: 46 MiB)
+    time_cost: 4,          // 4 iterations (OWASP minimum: 1)
+    parallelism: 4,        // 4 parallel lanes
+    salt_bytes: 32,        // 256-bit salt
+    output_bytes: 32,      // 256-bit derived key
+}
+----
+
+=== Post-Quantum Algorithms
+
+[cols="1,1,2"]
+|===
+|Algorithm |Security Level |Use Case
+
+|Kyber-1024 (ML-KEM)
+|NIST Level 5
+|Key encapsulation for data encryption keys
+
+|Dilithium5 (ML-DSA)
+|NIST Level 5
+|Digital signatures for authentication
+
+|Hybrid (Kyber + X25519)
+|Classical + PQ
+|Belt-and-suspenders key exchange
+|===
+
+=== Classical Algorithms
+
+[cols="1,1,2"]
+|===
+|Algorithm |Key Size |Use Case
+
+|AES-256-GCM
+|256-bit
+|Authenticated encryption of data
+
+|BLAKE3
+|256-bit output
+|Fast hashing, key derivation, MACs
+
+|SHAKE3-256
+|256-bit output
+|Extendable output for key expansion
+
+|Ed448
+|448-bit curve
+|Classical digital signatures
+|===
+
 == Installation
+
+=== Prerequisites
+
+* Rust 1.75+ (for vault-core)
+* Ada/GNAT 2023+ (for CLI/TUI)
+* Podman 4.0+ or Docker 24.0+ (for containers)
+* firewalld (for network lockdown)
+* SELinux (enforcing mode required)
 
 === Using Nix (Recommended)
 
@@ -107,30 +303,24 @@ nix develop github:hyperpolymath/reasonable-good-token-vault
 guix install -f guix.scm
 ----
 
-=== Using Cargo (Rust Core Only)
+=== Container Deployment (Production)
 
 [source,bash]
 ----
-cd vault-core
-cargo install --path .
-----
+# Build containers
+podman build -f container/svalinn.containerfile -t svalinn-vault:latest .
 
-=== Container Deployment
-
-[source,bash]
-----
-# Build container
-podman build -f container/svalinn.containerfile -t svalinn-vault .
-
-# Run with security restrictions
-podman run --rm -it \
+# Deploy with full security
+podman run --rm -d \
+  --name svalinn-vault \
   --security-opt label=type:svalinn_t \
+  --security-opt no-new-privileges:true \
   --cap-drop=ALL \
-  --cap-add=NET_BIND_SERVICE \
   --read-only \
-  -v svalinn-data:/vault/data:Z \
-  -v svalinn-keys:/vault/keys:Z \
-  svalinn-vault
+  --tmpfs /tmp:rw,noexec,nosuid,size=64m \
+  -v svalinn-data:/vault/data:Z,ro \
+  -v svalinn-socket:/run/svalinn:Z \
+  svalinn-vault:latest
 ----
 
 == Usage
@@ -142,32 +332,33 @@ podman run --rm -it \
 # Create new vault with strong password
 svalinn-cli init
 
-# Password requirements:
+# Password requirements enforced:
 # - Minimum 16 characters
-# - Mixed case, numbers, symbols
-# - Not in breach databases
-# - No repeats of previous passwords
+# - All character classes required (upper, lower, digit, symbol)
+# - Not in known breach databases (HaveIBeenPwned)
+# - No repeat of last 24 passwords
 # - Rotation required every 90 days
+# - Minimum 60 bits of entropy
 ----
 
 === Manage Identities
 
 [source,bash]
 ----
-# Add SSH key
+# Add SSH key (stored as GUID, name redacted)
 svalinn-cli add ssh --name "github-key" --path ~/.ssh/id_ed25519
 
-# Add PAT
+# Add PAT (stored as GUID, host redacted)
 svalinn-cli add pat --name "github-token" --host github.com
 
-# List all identities
+# List identities (shows GUIDs only unless authenticated)
 svalinn-cli list
 
-# Get identity with MFA
-svalinn-cli get <id>
+# Get identity (requires MFA + CAPTCHA)
+svalinn-cli get a7f2c3d4-e5b6-4a8c-9d0e-f1a2b3c4d5e6
 
 # Export armored backup
-svalinn-cli export backup.armor
+svalinn-cli export --armor backup.svalinn
 ----
 
 === Interactive TUI
@@ -177,69 +368,123 @@ svalinn-cli export backup.armor
 svalinn-cli tui
 ----
 
-== Password Policy
+== Lockdown Features
 
-[cols="1,2"]
-|===
-|Requirement |Value
+=== File Permission Lockdown
 
-|Minimum length |16 characters
-|Character classes |Uppercase, lowercase, digits, symbols (all required)
-|Breach check |Password checked against HaveIBeenPwned
-|History |No repeat of last 24 passwords
-|Rotation |Required every 90 days
-|Lockout |5 failures = 1 hour lockout, then progressive
-|===
-
-== Code Obfuscation on Lock
-
-When the vault is locked, all in-memory data undergoes quantum-seeded polymorphic transformation:
-
-1. *Quantum Seed*: Fresh entropy from ANU QRNG or local hardware RNG
-2. *Polymorphic Transform*: XOR, byte shuffle, bit rotation, chunk interleave
-3. *Metamorphic Evolution*: Transform structure changes each lock cycle
-4. *Decoy Data*: Fake fragments mixed with real data
-
-This makes memory forensics extremely difficult.
-
-== Network Security
-
-[cols="1,2"]
-|===
-|Feature |Implementation
-
-|Protocol |IPv6 only, IPv4 completely blocked
-|VPN |AirVPN via WireGuard
-|Firewall |firewalld with DROP default
-|Honeypots |IPv4 ports 22, 80, 443, 3306, 5432, 6379, 27017
-|DNS |DNSSEC + DoH + dns-fluctuator
-|===
-
-== Building
+When the vault is locked:
 
 [source,bash]
 ----
-# Build all
+# Vault data files: chmod 000 (no access at all)
+# Config files: chmod 400 (read-only for recovery)
+# Log files: chmod 200 (append-only)
+# Socket files: chmod 000 (no socket access)
+----
+
+=== Chroot Isolation
+
+[source,bash]
+----
+# Jail location
+/var/lib/svalinn/jail
+
+# Jail permissions: chmod 500 (execute only)
+# No shell access allowed
+# Minimal /dev (null, urandom only)
+# No network tools
+----
+
+=== Code Obfuscation on Lock
+
+When locked, all in-memory data undergoes quantum-seeded transformation:
+
+1. *Quantum Seed*: Fresh entropy from ANU QRNG (with decoy calls)
+2. *Polymorphic Transform*: XOR, byte shuffle, bit rotation, chunk interleave
+3. *Metamorphic Evolution*: Transform structure changes each lock cycle
+4. *Decoy Fragments*: Fake data mixed with real fragments
+
+== Declarative Configuration Trinity
+
+Svalinn uses three declarative configuration systems:
+
+[cols="1,2,2"]
+|===
+|File |Purpose |Enforcement
+
+|`Mustfile`
+|Mandatory requirements
+|CI/CD blocks non-compliance
+
+|`Justfile`
+|Task automation
+|Reproducible operations
+
+|`config.nickel`
+|Runtime configuration
+|Type-checked, validated
+|===
+
+=== Running Tasks
+
+[source,bash]
+----
+# Build
 just build
 
-# Run tests
-just test
-
 # Security audit
-just audit
+just security
 
-# Formal verification
-just verify
+# Full lockdown
+just lockdown
+
+# Validate configurations
+just validate
 ----
+
+[[liability-disclaimer]]
+== Liability Disclaimer
+
+[WARNING]
+====
+*IMPORTANT LEGAL NOTICE*
+
+This software is provided "AS IS" without warranty of any kind. The authors and contributors:
+
+1. *MAKE NO WARRANTIES* regarding the security, fitness for purpose, or correctness of this software
+
+2. *ACCEPT NO LIABILITY* for any damages, losses, or consequences arising from the use or misuse of this software
+
+3. *PROVIDE NO GUARANTEES* that this software will protect against any particular threat or attack
+
+4. *ARE NOT RESPONSIBLE* for ensuring compliance with any laws or regulations in your jurisdiction
+
+*DUAL-USE TECHNOLOGY ACKNOWLEDGMENT*
+
+This software implements cryptographic and security technologies that may be classified as dual-use items under various export control regimes (e.g., Wassenaar Arrangement, EAR, EU Dual-Use Regulation). Users are solely responsible for:
+
+- Determining applicable export control requirements
+- Obtaining necessary licenses or authorizations
+- Ensuring lawful use within their jurisdiction
+- Compliance with all applicable laws and regulations
+
+*NO LEGAL ADVICE*
+
+Nothing in this software or its documentation constitutes legal advice. Consult qualified legal counsel for guidance on compliance matters.
+
+*ASSUMPTION OF RISK*
+
+By using this software, you acknowledge that you understand these limitations and accept all risks associated with its use.
+====
 
 == License
 
 This project is dual-licensed:
 
-* *AGPL-3.0-or-later* - Default, ensures derivative works remain open
-* *MIT* - Available upon request for specific use cases
+* *AGPL-3.0-or-later* - Default license, ensures derivative works remain open source
+* *MIT* - Available upon request for specific use cases (contact maintainers)
 
-The *Palimpsest License* overlay is encouraged. See link:LICENSES/PALIMPSEST.md[LICENSES/PALIMPSEST.md].
+The *Palimpsest License* overlay is encouraged for derivative works. See link:LICENSES/PALIMPSEST.md[LICENSES/PALIMPSEST.md].
 
 == Contributing
 
@@ -248,12 +493,22 @@ See link:CONTRIBUTING.adoc[CONTRIBUTING.adoc].
 All contributions require:
 
 * Signed commits (GPG or SSH)
-* Passing all security checks
-* Code review by maintainers
+* Passing all security checks (CodeQL, cargo-audit, Trivy)
+* Code review by at least 2 maintainers
 * Formal verification where applicable
+* No introduction of new dependencies without security review
 
 == Security
 
 See link:.github/SECURITY.md[SECURITY.md] for vulnerability reporting.
 
-*DO NOT* open public issues for security vulnerabilities.
+[IMPORTANT]
+====
+*DO NOT* open public GitHub issues for security vulnerabilities.
+
+Email: security@hyperpolymath.example (PGP key in SECURITY.md)
+====
+
+== Roadmap
+
+See link:ROADMAP.adoc[ROADMAP.adoc] for v1.0.0 requirements and future plans.
