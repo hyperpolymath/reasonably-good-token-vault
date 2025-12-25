@@ -25,9 +25,9 @@ image:https://img.shields.io/badge/Formally-Verified-green[Formally Verified]
 image:https://img.shields.io/badge/License-AGPL--3.0-orange[License: AGPL-3.0]
 image:https://img.shields.io/badge/Status-Alpha-yellow[Status: Alpha]
 
-== What Is Svalinn Vault?
+== What Is the RGT Vault?
 
-Svalinn Vault stores your digital identities securely. It goes beyond typical password managers to protect your most sensitive credentials.
+A Svalinn-based Vault stores your digital identities securely. It goes beyond typical password managers to protect your most sensitive credentials.
 
 === What You Can Store
 
@@ -40,9 +40,9 @@ Svalinn Vault stores your digital identities securely. It goes beyond typical pa
 * *Decentralised Identifiers (DIDs)* — Web3 identity
 * *WireGuard keys* — VPN connections
 
-=== Why Choose Svalinn Vault?
+=== Why Choose RGT Vault?
 
-Most password managers store passwords. Svalinn Vault stores cryptographic keys and tokens that control access to your entire digital life.
+Most password managers store passwords. RGT Vault stores cryptographic keys and tokens that control access to your entire digital life.
 
 [cols="1,1"]
 |===
