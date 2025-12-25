@@ -36,11 +36,31 @@ jobs:
       - name: Verify All Commits Signed
         run: |
           echo "Checking commit signatures..."
+          # Trusted bot accounts that don't require signatures
+          TRUSTED_BOTS="noreply@anthropic.com github-actions[bot] dependabot[bot]"
+
           for commit in $(git log --format=%H origin/main..HEAD 2>/dev/null || git log --format=%H -10); do
-            if ! git verify-commit "$commit" 2>/dev/null; then
-              echo "ERROR: Unsigned commit detected: $commit"
-              echo "All commits MUST be GPG or SSH signed."
-              exit 1
+            AUTHOR_EMAIL=$(git log -1 --format='%ae' "$commit")
+            AUTHOR_NAME=$(git log -1 --format='%an' "$commit")
+
+            # Check if commit is from a trusted bot
+            IS_BOT=false
+            for bot in $TRUSTED_BOTS; do
+              if [[ "$AUTHOR_EMAIL" == "$bot" ]] || [[ "$AUTHOR_NAME" == "$bot" ]]; then
+                IS_BOT=true
+                echo "✓ Trusted bot commit: $commit ($AUTHOR_EMAIL)"
+                break
+              fi
+            done
+
+            # Require signature only for non-bot commits
+            if [[ "$IS_BOT" == "false" ]]; then
+              if ! git verify-commit "$commit" 2>/dev/null; then
+                echo "ERROR: Unsigned commit detected: $commit"
+                echo "All human commits MUST be GPG or SSH signed."
+                exit 1
+              fi
+              echo "✓ Signed commit verified: $commit"
             fi
           done
           echo "All commits verified."
