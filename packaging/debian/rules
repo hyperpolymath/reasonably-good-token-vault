@@ -1,0 +1,19 @@
+#!/usr/bin/make -f
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+%:
+	dh $@
+
+override_dh_auto_build:
+	# Build Zig crypto library
+	cd vault-core-ats && zig build -Doptimize=ReleaseSafe
+	# Build ATS core
+	cd vault-core-ats && $(MAKE) build
+
+override_dh_auto_install:
+	install -Dm755 vault-core-ats/svalinn-vault-core $(DESTDIR)/usr/bin/svalinn-cli
+	install -Dm644 vault-core-ats/zig-out/lib/libsvalinn_crypto.a $(DESTDIR)/usr/lib/libsvalinn_crypto.a
+	install -Dm644 container/config/selinux/svalinn.te $(DESTDIR)/usr/share/selinux/packages/svalinn.te
+
+override_dh_auto_test:
+	cd vault-core-ats && zig build test

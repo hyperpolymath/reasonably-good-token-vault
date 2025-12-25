@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
+<!-- SPDX-FileCopyrightText: 2025 Hyperpolymath -->
+<package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
+  <metadata>
+    <id>svalinn-vault</id>
+    <version>0.1.0</version>
+    <title>Svalinn Vault</title>
+    <authors>Hyperpolymath</authors>
+    <owners>Hyperpolymath</owners>
+    <licenseUrl>https://www.gnu.org/licenses/agpl-3.0.html</licenseUrl>
+    <projectUrl>https://github.com/hyperpolymath/reasonable-good-token-vault</projectUrl>
+    <requireLicenseAcceptance>true</requireLicenseAcceptance>
+    <description>
+Post-quantum secure identity vault with Kyber-1024 and Dilithium5.
+
+Features:
+- Post-quantum key encapsulation (Kyber-1024)
+- Post-quantum signatures (Dilithium5)
+- Classical signatures (Ed448, Ed25519)
+- AES-256-GCM authenticated encryption
+- BLAKE3 hashing
+- Argon2id key derivation (64 MiB memory)
+- GUID-based storage with redaction
+- chmod 000 lockdown when locked
+- MFA with anti-AI CAPTCHA
+
+WARNING: This is dual-use technology. Users are responsible for
+compliance with applicable export control regulations.
+    </description>
+    <summary>Post-quantum secure identity vault</summary>
+    <releaseNotes>Initial release with post-quantum cryptography support.</releaseNotes>
+    <copyright>2025 Hyperpolymath</copyright>
+    <tags>security cryptography post-quantum vault identity ssh pgp</tags>
+    <dependencies>
+      <dependency id="zig" version="0.11.0" />
+    </dependencies>
+  </metadata>
+  <files>
+    <file src="tools\**" target="tools" />
+  </files>
+</package>

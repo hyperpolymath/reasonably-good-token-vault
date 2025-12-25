@@ -1,0 +1,82 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-FileCopyrightText: 2025 Hyperpolymath
+#
+# Svalinn Vault rpm-ostree overlay configuration
+# For use with Fedora Silverblue, Kinoite, CoreOS, etc.
+
+# Install as layered package
+# rpm-ostree install svalinn-vault
+
+# Or include in custom ostree compose:
+ref: svalinn/vault/${basearch}
+
+rojig:
+  name: svalinn-vault
+  summary: "Post-quantum secure identity vault"
+  license: AGPL-3.0-or-later
+
+packages:
+  - svalinn-vault
+
+# Remove packages that conflict with security requirements
+packages-remove:
+  - telnet
+  - rsh
+  - ftp
+
+# Packages to include in base image
+include:
+  - fedora-minimal.yaml
+
+# Add SELinux policy
+add-files:
+  - - svalinn.te
+    - /usr/share/selinux/packages/svalinn.te
+
+# Post-installation commands
+postprocess:
+  - |
+    #!/bin/bash
+    set -euo pipefail
+
+    # Compile and install SELinux policy
+    if [ -f /usr/share/selinux/packages/svalinn.te ]; then
+      checkmodule -M -m -o /tmp/svalinn.mod /usr/share/selinux/packages/svalinn.te
+      semodule_package -o /tmp/svalinn.pp -m /tmp/svalinn.mod
+      semodule -i /tmp/svalinn.pp
+      rm -f /tmp/svalinn.mod /tmp/svalinn.pp
+    fi
+
+    # Create vault directories
+    mkdir -p /var/lib/svalinn/vault
+    mkdir -p /var/lib/svalinn/jail
+    chmod 700 /var/lib/svalinn
+    chmod 000 /var/lib/svalinn/vault  # Locked by default
+
+    # Set up firewalld zone
+    if [ -d /etc/firewalld/zones ]; then
+      cat > /etc/firewalld/zones/svalinn.xml << 'EOF'
+<?xml version="1.0" encoding="utf-8"?>
+<zone target="DROP">
+  <short>Svalinn</short>
+  <description>Maximum security zone for Svalinn vault - IPv6 only</description>
+  <service name="dhcpv6-client"/>
+</zone>
+EOF
+    fi
+
+# Ensure immutability of critical files
+preserve-only:
+  - /usr/bin/svalinn-cli
+  - /usr/lib/libsvalinn_crypto.a
+  - /usr/share/selinux/packages/svalinn.te
+
+# Container configuration for rpm-ostree containers
+container:
+  base: quay.io/fedora/fedora-coreos:stable
+  labels:
+    io.opencontainers.image.title: "Svalinn Vault"
+    io.opencontainers.image.description: "Post-quantum secure identity vault"
+    io.opencontainers.image.source: "https://github.com/hyperpolymath/reasonable-good-token-vault"
+    io.opencontainers.image.licenses: "AGPL-3.0-or-later"
+    io.opencontainers.image.documentation: "https://github.com/hyperpolymath/reasonable-good-token-vault#readme"
