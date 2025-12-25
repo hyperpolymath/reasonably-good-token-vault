@@ -1,11 +1,9 @@
 (* SPDX-License-Identifier: AGPL-3.0-or-later *)
 (* SPDX-FileCopyrightText: 2025 Hyperpolymath *)
 (*
- * RGT Vault - CLI Implementation
- * (Reasonably Good Token Vault - a parody of Pretty Good Privacy)
+ * Svalinn Vault - CLI Implementation
  *
  * ATS-based command line interface implementation.
- * Built on Svalinn container technology.
  *)
 
 #include "share/atspre_staload.hats"
@@ -20,14 +18,13 @@ staload "SATS/lockdown.sats"
 (* ========================================================================== *)
 
 val VERSION = "0.1.0"
-val PROGRAM_NAME = "rgt-vault"
+val PROGRAM_NAME = "svalinn-cli"
 
 val HELP_TEXT = "\
-RGT Vault - Reasonably Good Token Vault\n\
-Post-Quantum Secure Identity Storage (a parody of Pretty Good Privacy)\n\
+Svalinn Vault - Post-Quantum Secure Identity Storage\n\
 \n\
 USAGE:\n\
-    rgt-vault <COMMAND> [OPTIONS]\n\
+    svalinn-cli <COMMAND> [OPTIONS]\n\
 \n\
 COMMANDS:\n\
     init              Initialize a new vault\n\
@@ -48,16 +45,13 @@ COMMANDS:\n\
 OPTIONS:\n\
     -v, --verbose     Verbose output\n\
     -q, --quiet       Quiet mode\n\
-    --strict          Minimal file access mode\n\
-    --relaxed         Broader file access mode\n\
     --no-mfa          Skip MFA (NOT RECOMMENDED)\n\
 \n\
 ENVIRONMENT:\n\
-    RGT_VAULT_DIR         Vault directory (default: ~/.rgt-vault)\n\
-    RGT_SOCKET            API socket path\n\
+    SVALINN_VAULT_DIR     Vault directory (default: ~/.svalinn)\n\
+    SVALINN_SOCKET        API socket path\n\
 \n\
 SECURITY:\n\
-    - Built on Svalinn container with corre-terro image\n\
     - All credentials stored as GUIDs with redacted names\n\
     - Post-quantum encryption (Kyber-1024 + Dilithium5)\n\
     - MFA required for all operations\n\
@@ -228,7 +222,7 @@ end
 implement execute_command (state, cmd) = let
 
   fun cmd_init (): int = let
-    val () = cli_print("Initializing new RGT vault...")
+    val () = cli_print("Initializing new Svalinn vault...")
 
     (* Read and confirm password *)
     val pw1 = cli_read_password("Enter master password (16+ chars): ")
@@ -291,7 +285,7 @@ implement execute_command (state, cmd) = let
 
   fun cmd_version (): int = let
     val () = $extfcall(void, "printf", "%s version %s\n", PROGRAM_NAME, VERSION)
-    val () = cli_print("Post-quantum cryptographic suite: RGT-PQ-2025 (Svalinn-based)")
+    val () = cli_print("Post-quantum cryptographic suite: SVALINN-PQ-2025")
     val () = cli_print("Algorithms: Kyber-1024, Dilithium5, Ed448, AES-256-GCM, BLAKE3")
   in
     0
@@ -327,7 +321,7 @@ in
       code
     end
   | None() => let
-      val () = cli_error("Invalid command. Use 'rgt-vault help' for usage.")
+      val () = cli_error("Invalid command. Use 'svalinn-cli help' for usage.")
       val () = cli_cleanup(state)
     in
       1
