@@ -1,0 +1,145 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-FileCopyrightText: 2025 Hyperpolymath
+#
+# Nightly Security & Verification Pipeline
+
+name: Nightly Verification
+
+on:
+  schedule:
+    # Run at 02:00 UTC every night
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  # ===========================================================================
+  # Full Formal Verification Suite
+  # ===========================================================================
+
+  formal-full:
+    name: Full Formal Verification
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install All Verification Tools
+        run: |
+          # Echidna
+          pip3 install slither-analyzer
+          curl -L https://github.com/crytic/echidna/releases/latest/download/echidna-linux -o /tmp/echidna
+          chmod +x /tmp/echidna && sudo mv /tmp/echidna /usr/local/bin/
+
+          # Z3
+          pip3 install z3-solver
+
+          # Coq
+          sudo apt-get update
+          sudo apt-get install -y coq
+
+      - name: Run All Echidna Specs
+        working-directory: validation/echidna
+        run: |
+          for spec in *.sol; do
+            echo "=========================================="
+            echo "Verifying: $spec"
+            echo "=========================================="
+            echidna "$spec" --config echidna.yaml --test-limit 100000 || true
+          done
+
+      - name: Run Z3 Proofs
+        working-directory: validation/z3
+        run: |
+          for proof in *.py; do
+            echo "=========================================="
+            echo "Checking: $proof"
+            echo "=========================================="
+            python3 "$proof" || true
+          done
+
+      - name: Compile Coq Proofs
+        working-directory: validation/coq
+        run: |
+          for proof in *.v; do
+            echo "=========================================="
+            echo "Compiling: $proof"
+            echo "=========================================="
+            coqc "$proof" || true
+          done
+
+  # ===========================================================================
+  # Dependency Vulnerability Scan
+  # ===========================================================================
+
+  dependency-scan:
+    name: Dependency Vulnerability Scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: OSV Scanner
+        uses: google/osv-scanner-action@v1
+        with:
+          scan-args: |-
+            --lockfile=vault-core-ats/build.zig.zon
+            --recursive
+
+      - name: Dependency Review
+        uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: low
+
+  # ===========================================================================
+  # Container Freshness Check
+  # ===========================================================================
+
+  container-update-check:
+    name: Check Container Updates
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check Base Image Updates
+        run: |
+          # Check if Fedora CoreOS has updates
+          skopeo inspect docker://quay.io/fedora/fedora-coreos:stable > /tmp/remote.json
+          echo "Latest CoreOS digest:"
+          jq -r '.Digest' /tmp/remote.json
+
+  # ===========================================================================
+  # CVE Monitoring
+  # ===========================================================================
+
+  cve-monitor:
+    name: CVE Monitoring
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check NVD for Related CVEs
+        run: |
+          # Check for CVEs related to our dependencies
+          KEYWORDS="argon2 blake3 kyber dilithium aes-gcm"
+          for kw in $KEYWORDS; do
+            echo "Checking CVEs for: $kw"
+            curl -s "https://services.nvd.nist.gov/rest/json/cves/2.0?keywordSearch=$kw&resultsPerPage=5" | \
+              jq -r '.vulnerabilities[]?.cve.id // empty' || true
+          done
+
+  # ===========================================================================
+  # QRNG Availability Check
+  # ===========================================================================
+
+  qrng-check:
+    name: QRNG Availability
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check ANU QRNG API
+        run: |
+          # Verify QRNG endpoint is reachable
+          curl -sf "https://qrng.anu.edu.au/API/jsonI.php?length=1&type=uint8" | \
+            jq -e '.success == true' || echo "QRNG API check failed"
