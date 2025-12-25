@@ -1,38 +1,60 @@
 ---
-name: Bug report
-about: Create a report to help us improve
-title: "[Bug]: "
-labels: 'bug, priority: unset, triage'
+name: Bug Report
+about: Report a bug (NOT for security vulnerabilities)
+title: '[BUG] '
+labels: 'bug, triage'
 assignees: ''
-
 ---
 
-**Describe the bug**
-A clear and concise description of what the bug is.
+<!--
+╔════════════════════════════════════════════════════════════════╗
+║  SECURITY VULNERABILITIES: DO NOT REPORT HERE!                 ║
+║  See SECURITY.md for responsible disclosure process.           ║
+╚════════════════════════════════════════════════════════════════╝
+-->
 
-**To Reproduce**
-Steps to reproduce the behavior:
-1. Go to '...'
-2. Click on '....'
-3. Scroll down to '....'
-4. See error
+## Pre-Submission Checklist
 
-**Expected behavior**
-A clear and concise description of what you expected to happen.
+- [ ] This is NOT a security vulnerability
+- [ ] I have searched existing issues for duplicates
+- [ ] I have removed ALL secrets/credentials from this report
+- [ ] I can reproduce this bug consistently
 
-**Screenshots**
-If applicable, add screenshots to help explain your problem.
+## Bug Description
 
-**Desktop (please complete the following information):**
- - OS: [e.g. iOS]
- - Browser [e.g. chrome, safari]
- - Version [e.g. 22]
+A clear and concise description of the bug.
 
-**Smartphone (please complete the following information):**
- - Device: [e.g. iPhone6]
- - OS: [e.g. iOS8.1]
- - Browser [e.g. stock browser, safari]
- - Version [e.g. 22]
+## Environment
 
-**Additional context**
-Add any other context about the problem here.
+| Field | Value |
+|-------|-------|
+| OS | [e.g., Fedora 39, NixOS 24.05] |
+| Vault Version | [e.g., 0.1.0] |
+| Rust Version | [e.g., 1.75.0] |
+| Container Runtime | [None / Podman / Docker] |
+| Installation Method | [Nix / Guix / Cargo / Container] |
+
+## Steps to Reproduce
+
+1.
+2.
+3.
+
+## Expected Behavior
+
+What you expected to happen.
+
+## Actual Behavior
+
+What actually happened.
+
+## Relevant Logs
+
+```
+Paste relevant logs here.
+REMOVE ANY SECRETS, TOKENS, OR CREDENTIALS!
+```
+
+## Additional Context
+
+Any other relevant information.

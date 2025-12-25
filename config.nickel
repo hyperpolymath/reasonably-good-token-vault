@@ -1,0 +1,381 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-FileCopyrightText: 2025 Hyperpolymath
+#
+# Svalinn Vault - Master Configuration
+# Part of the Mustfile/Justfile/Nickel declarative trinity
+#
+# This file defines the complete runtime configuration for the vault.
+# Validated against Mustfile requirements and executed via Justfile tasks.
+
+let Crypto = import "security/crypto.ncl" in
+let Network = import "network/network.ncl" in
+
+{
+  # ==========================================================================
+  # Core Vault Configuration
+  # ==========================================================================
+
+  vault = {
+    name = "svalinn",
+    version = "0.1.0",
+
+    # Security posture - always maximum
+    security_level = "maximum",
+
+    # Data directory (within chroot when active)
+    data_dir = "/var/lib/svalinn/vault",
+
+    # Socket for API communication
+    api_socket = "/run/svalinn/api.sock",
+
+    # Log directory
+    log_dir = "/var/log/svalinn",
+  },
+
+  # ==========================================================================
+  # Cryptographic Configuration
+  # ==========================================================================
+
+  crypto = {
+    # Key derivation
+    kdf = {
+      algorithm = "argon2id",
+      memory_kib = 65536,      # 64 MiB
+      time_cost = 4,
+      parallelism = 4,
+      salt_bytes = 32,
+    },
+
+    # Symmetric encryption
+    symmetric = {
+      algorithm = "aes-256-gcm",
+      key_bits = 256,
+      nonce_bytes = 12,
+      tag_bytes = 16,
+    },
+
+    # Hash functions
+    hash = {
+      primary = "blake3",
+      extended_output = "shake3-256",
+      output_bytes = 32,
+    },
+
+    # Post-quantum key encapsulation
+    kem = {
+      algorithm = "kyber-1024",
+      security_level = 5,
+    },
+
+    # Signatures
+    signatures = {
+      classical = {
+        algorithm = "ed448",
+        key_bits = 448,
+      },
+      post_quantum = {
+        algorithm = "dilithium5",
+        security_level = 5,
+      },
+    },
+
+    # Prime verification
+    primes = {
+      miller_rabin_rounds = 64,
+      use_flat_distributed = true,
+    },
+
+    # QRNG configuration
+    qrng = {
+      enabled = true,
+      source = "anu",
+      endpoint = "https://qrng.anu.edu.au/API/jsonI.php",
+      cache_size = 1024,
+      decoy_probability = 0.3,
+      packet_splitting = true,
+      min_fragments = 3,
+      max_fragments = 7,
+    },
+  },
+
+  # ==========================================================================
+  # Access Control Configuration
+  # ==========================================================================
+
+  access = {
+    # MFA settings
+    mfa = {
+      required = true,
+      type = "totp",
+      digits = 6,
+      period_seconds = 30,
+      algorithm = "sha256",
+      window = 1,
+    },
+
+    # Time-lock settings
+    timelock = {
+      timezone = "UTC",
+      precision_seconds = 1,
+    },
+
+    # Password policy
+    password = {
+      min_length = 16,
+      require_uppercase = true,
+      require_lowercase = true,
+      require_digits = true,
+      require_symbols = true,
+      history_count = 24,
+      max_age_days = 90,
+      min_entropy_bits = 60.0,
+      check_breaches = true,
+    },
+
+    # Session settings
+    session = {
+      max_duration_hours = 8,
+      idle_timeout_minutes = 15,
+      require_reauth_for_export = true,
+    },
+
+    # Anti-automation
+    anti_automation = {
+      rate_limit_per_minute = 10,
+      lockout_after_failures = 5,
+      lockout_duration_minutes = 30,
+      variable_delay_enabled = true,
+      min_delay_ms = 500,
+      max_delay_ms = 3000,
+      captcha_enabled = true,
+      captcha_type = "post_quantum_anti_ai",
+    },
+  },
+
+  # ==========================================================================
+  # Network Configuration
+  # ==========================================================================
+
+  network = {
+    # IPv6 only
+    ipv6_only = true,
+    ipv4_blocked = true,
+
+    # VPN
+    vpn = {
+      required = true,
+      provider = "airvpn",
+      protocol = "wireguard",
+      config_path = "network/airvpn/airvpn.conf",
+    },
+
+    # API binding
+    api = {
+      bind = "::1",
+      port = 8443,
+      unix_socket = "/run/svalinn/api.sock",
+      tls_required = true,
+    },
+
+    # Firewall
+    firewall = {
+      backend = "firewalld",
+      zone = "svalinn",
+      default_policy = "drop",
+    },
+
+    # Honeypots
+    honeypots = {
+      enabled = true,
+      ipv4_only = true,  # Catch IPv4 probes
+      ports = [22, 23, 80, 443, 3389, 5900],
+      log_attempts = true,
+    },
+  },
+
+  # ==========================================================================
+  # Container Configuration
+  # ==========================================================================
+
+  container = {
+    # Runtime
+    runtime = "podman",
+    image = "svalinn-vault",
+    tag = "latest",
+
+    # Security
+    security = {
+      selinux_type = "svalinn_t",
+      drop_all_caps = true,
+      no_new_privileges = true,
+      read_only_root = true,
+      seccomp_profile = "container/config/seccomp/svalinn.json",
+    },
+
+    # Resource limits
+    limits = {
+      memory = "256M",
+      cpu = "1.0",
+      pids = 50,
+    },
+
+    # Mounts
+    mounts = {
+      vault_data = {
+        source = "/var/lib/svalinn/vault",
+        target = "/data",
+        readonly = false,
+      },
+      config = {
+        source = "/etc/svalinn",
+        target = "/config",
+        readonly = true,
+      },
+      tmp = {
+        type = "tmpfs",
+        target = "/tmp",
+        size = "64m",
+        options = ["noexec", "nosuid"],
+      },
+    },
+  },
+
+  # ==========================================================================
+  # Database Configuration
+  # ==========================================================================
+
+  database = {
+    # CUBS primary store
+    cubs = {
+      config_path = "database/cubs/cubs-config.nickel",
+    },
+
+    # Dragonfly cache
+    cache = {
+      backend = "dragonfly",
+      socket = "/run/dragonfly/dragonfly.sock",
+      memory_mb = 128,
+    },
+
+    # XTDB search index
+    search = {
+      backend = "xtdb",
+      config_path = "database/xtdb-search/xtdb-config.edn",
+    },
+  },
+
+  # ==========================================================================
+  # Lockdown Configuration
+  # ==========================================================================
+
+  lockdown = {
+    # File permissions when locked
+    locked = {
+      vault_files = "000",
+      config_files = "400",
+      log_files = "200",
+      socket_files = "000",
+    },
+
+    # File permissions when unlocked
+    unlocked = {
+      vault_files = "600",
+      config_files = "400",
+      log_files = "200",
+      socket_files = "600",
+    },
+
+    # Chroot jail
+    chroot = {
+      enabled = true,
+      path = "/var/lib/svalinn/jail",
+      minimal_dev = true,
+      no_shell = true,
+    },
+
+    # Obfuscation on lock
+    obfuscation = {
+      enabled = true,
+      quantum_seeded = true,
+      polymorphic = true,
+      metamorphic = true,
+    },
+  },
+
+  # ==========================================================================
+  # Logging and Monitoring
+  # ==========================================================================
+
+  logging = {
+    level = "warn",
+    format = "json",
+
+    # Destinations
+    destinations = [
+      { type = "file", path = "/var/log/svalinn/vault.log" },
+      { type = "syslog", facility = "auth" },
+    ],
+
+    # Redaction - never log these
+    redact_patterns = [
+      "password", "secret", "token", "key", "credential",
+      "Authorization", "Cookie", "X-Api-Key",
+    ],
+
+    # Audit events - always log
+    audit = {
+      authentication = true,
+      authorization = true,
+      data_access = true,
+      configuration_changes = true,
+    },
+
+    # Tamper evidence
+    integrity = {
+      signed = true,
+      hash_chain = true,
+      algorithm = "blake3",
+    },
+  },
+
+  monitoring = {
+    # VirusTotal scanning
+    virustotal = {
+      enabled = true,
+      scan_frequency_hours = 24,
+      api_key_env = "VIRUSTOTAL_API_KEY",
+    },
+
+    # CVE monitoring
+    cve = {
+      enabled = true,
+      check_frequency_hours = 6,
+      severity_threshold = "medium",
+    },
+  },
+
+  # ==========================================================================
+  # Versioning Configuration
+  # ==========================================================================
+
+  versioning = {
+    # Git-style content-addressable storage
+    type = "git-style",
+    algorithm = "blake3",
+
+    # Fragmentation for obfuscation
+    fragmentation = {
+      enabled = true,
+      min_fragments = 3,
+      max_fragments = 7,
+      compression = "zstd",
+      compression_level = 19,
+    },
+
+    # History retention
+    history = {
+      max_versions = 100,
+      prune_after_days = 365,
+    },
+  },
+}

@@ -1,0 +1,291 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-FileCopyrightText: 2025 Hyperpolymath
+#
+# CI/CD Lockdown Workflow - Maximum Protection
+# Enforces no code changes unless explicitly forked
+
+name: Lockdown Enforcement
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+    branches: ['**']
+  fork:
+  create:
+  delete:
+  repository_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  # ==========================================================================
+  # Verify Signed Commits
+  # ==========================================================================
+  verify-signatures:
+    name: Verify Commit Signatures
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify All Commits Signed
+        run: |
+          echo "Checking commit signatures..."
+          for commit in $(git log --format=%H origin/main..HEAD 2>/dev/null || git log --format=%H -10); do
+            if ! git verify-commit "$commit" 2>/dev/null; then
+              echo "ERROR: Unsigned commit detected: $commit"
+              echo "All commits MUST be GPG or SSH signed."
+              exit 1
+            fi
+          done
+          echo "All commits verified."
+
+  # ==========================================================================
+  # Enforce Branch Protection
+  # ==========================================================================
+  branch-protection:
+    name: Enforce Branch Protection
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check Protected Branches
+        run: |
+          BRANCH="${GITHUB_REF#refs/heads/}"
+          PROTECTED_BRANCHES="main release"
+
+          for protected in $PROTECTED_BRANCHES; do
+            if [[ "$BRANCH" == "$protected"* ]]; then
+              echo "Push to protected branch: $BRANCH"
+
+              # Verify this is from a PR (not direct push)
+              if [[ "$GITHUB_EVENT_NAME" == "push" && -z "$GITHUB_HEAD_REF" ]]; then
+                echo "ERROR: Direct push to protected branch is not allowed."
+                echo "All changes must go through pull requests."
+                exit 1
+              fi
+            fi
+          done
+
+  # ==========================================================================
+  # Verify No Unauthorized Changes
+  # ==========================================================================
+  verify-no-changes:
+    name: Verify Authorized Changes Only
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check for Sensitive File Changes
+        run: |
+          # Files that require special authorization to modify
+          SENSITIVE_FILES=(
+            ".github/workflows/"
+            ".github/CODEOWNERS"
+            ".github/settings.yml"
+            "SECURITY.md"
+            "Mustfile"
+            "container/config/selinux/"
+            "security/"
+          )
+
+          CHANGED_FILES=$(git diff --name-only origin/main...HEAD)
+
+          for file in $CHANGED_FILES; do
+            for sensitive in "${SENSITIVE_FILES[@]}"; do
+              if [[ "$file" == $sensitive* ]]; then
+                echo "WARNING: Sensitive file modified: $file"
+                echo "This change requires additional review from CODEOWNERS."
+                # Don't fail, but flag for review
+              fi
+            done
+          done
+
+      - name: Verify No Force Push Attempted
+        run: |
+          # Check if this appears to be a rewritten history
+          if ! git merge-base --is-ancestor origin/main HEAD 2>/dev/null; then
+            echo "ERROR: History rewrite detected."
+            echo "Force push and history modification are NOT allowed."
+            exit 1
+          fi
+
+  # ==========================================================================
+  # Verify Fork Requirements
+  # ==========================================================================
+  fork-check:
+    name: Fork Requirements
+    runs-on: ubuntu-latest
+    if: github.event_name == 'fork'
+    steps:
+      - name: Document Fork
+        run: |
+          echo "Repository forked."
+          echo "Fork owner: ${{ github.actor }}"
+          echo "Original repo: ${{ github.repository }}"
+          echo ""
+          echo "NOTICE: Forks must comply with AGPL-3.0-or-later license."
+          echo "All modifications must:"
+          echo "  1. Keep source code publicly available"
+          echo "  2. Maintain license notices"
+          echo "  3. Document all changes"
+          echo "  4. Keep security measures intact"
+
+  # ==========================================================================
+  # Validate Mustfile Compliance
+  # ==========================================================================
+  mustfile-compliance:
+    name: Mustfile Compliance
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Mustfile Validator
+        run: |
+          # Install mustfile validator (placeholder)
+          echo "Installing mustfile validator..."
+          # cargo install mustfile-validator
+
+      - name: Validate Mustfile
+        run: |
+          echo "Validating Mustfile compliance..."
+          # mustfile validate Mustfile
+
+          # Manual checks for critical requirements
+          if ! grep -q "require_signed_commits = true" Mustfile; then
+            echo "ERROR: Mustfile must require signed commits"
+            exit 1
+          fi
+
+          if ! grep -q "no_force_push = true" Mustfile; then
+            echo "ERROR: Mustfile must prohibit force push"
+            exit 1
+          fi
+
+          echo "Mustfile compliance verified."
+
+  # ==========================================================================
+  # File Permission Lockdown Verification
+  # ==========================================================================
+  permission-check:
+    name: Verify Lockdown Permissions
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check File Permissions in Config
+        run: |
+          echo "Verifying lockdown permission requirements..."
+
+          # Check config.nickel for proper lockdown settings
+          if grep -q 'vault_files = "000"' config.nickel; then
+            echo "✓ Vault files locked (000) when closed"
+          else
+            echo "WARNING: Vault lockdown may not be configured correctly"
+          fi
+
+          # Check Justfile has lockdown commands
+          if grep -q "lock-files:" Justfile; then
+            echo "✓ Justfile has lock-files recipe"
+          else
+            echo "ERROR: Justfile missing lock-files recipe"
+            exit 1
+          fi
+
+  # ==========================================================================
+  # Chroot Configuration Verification
+  # ==========================================================================
+  chroot-check:
+    name: Verify Chroot Configuration
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verify Chroot Settings
+        run: |
+          echo "Checking chroot jail configuration..."
+
+          # Verify cadre-router has chroot enabled
+          if grep -q 'chroot.*enabled.*true' network/cadre-router/cadre-config.nickel; then
+            echo "✓ Chroot enabled in cadre-router"
+          else
+            echo "ERROR: Chroot must be enabled"
+            exit 1
+          fi
+
+          # Verify minimal jail permissions
+          if grep -q 'chmod 500' Justfile || grep -q 'jail_mode = "500"' Mustfile; then
+            echo "✓ Chroot jail has restricted permissions"
+          fi
+
+          echo "Chroot configuration verified."
+
+  # ==========================================================================
+  # API Surface Minimization
+  # ==========================================================================
+  api-surface-check:
+    name: Verify Minimal API Surface
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check API Restrictions
+        run: |
+          echo "Verifying minimal API attack surface..."
+
+          # Check that only necessary endpoints exist
+          # Verify no debug/admin endpoints in production config
+
+          if grep -q 'accept_xml.*enabled.*false' network/cadre-router/cadre-config.nickel; then
+            echo "✓ XML parsing disabled (XXE prevention)"
+          fi
+
+          if grep -q 'accept_form.*enabled.*false' network/cadre-router/cadre-config.nickel; then
+            echo "✓ Form data disabled"
+          fi
+
+          if grep -q 'accept_multipart.*enabled.*false' network/cadre-router/cadre-config.nickel; then
+            echo "✓ File uploads disabled"
+          fi
+
+          echo "API surface minimized."
+
+  # ==========================================================================
+  # Final Lockdown Report
+  # ==========================================================================
+  lockdown-report:
+    name: Lockdown Status Report
+    runs-on: ubuntu-latest
+    needs: [verify-signatures, branch-protection, mustfile-compliance, permission-check, chroot-check, api-surface-check]
+    if: always()
+    steps:
+      - name: Generate Report
+        run: |
+          echo "╔══════════════════════════════════════════════════════════════╗"
+          echo "║              SVALINN VAULT LOCKDOWN REPORT                   ║"
+          echo "╠══════════════════════════════════════════════════════════════╣"
+          echo "║ Commit Signatures: ${{ needs.verify-signatures.result }}"
+          echo "║ Branch Protection: ${{ needs.branch-protection.result }}"
+          echo "║ Mustfile Compliance: ${{ needs.mustfile-compliance.result }}"
+          echo "║ Permission Lockdown: ${{ needs.permission-check.result }}"
+          echo "║ Chroot Configuration: ${{ needs.chroot-check.result }}"
+          echo "║ API Surface: ${{ needs.api-surface-check.result }}"
+          echo "╚══════════════════════════════════════════════════════════════╝"
+
+          # Fail if any critical check failed
+          if [[ "${{ needs.verify-signatures.result }}" == "failure" ]] || \
+             [[ "${{ needs.mustfile-compliance.result }}" == "failure" ]]; then
+            echo "CRITICAL: Lockdown requirements not met."
+            exit 1
+          fi

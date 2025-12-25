@@ -1,0 +1,199 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-FileCopyrightText: 2025 Hyperpolymath
+#
+# Cadre Router Configuration - Maximum Security LAN Routing
+# Uses hyperpolymath/cadre-router for protected internal routing
+
+let SecurityLevel = [| 'Maximum, 'High, 'Medium, 'Low |] in
+let CachePolicy = [| 'NoStore, 'Private, 'Revalidate |] in
+
+{
+  router = {
+    name = "svalinn-cadre",
+    version = "1.0.0",
+    security_level = 'Maximum,
+
+    # No version disclosure - security through minimalism
+    disclosure = {
+      server_header = false,
+      version_header = false,
+      powered_by = false,
+      x_request_id = false,
+      timing_headers = false,
+      error_details = false,
+    },
+  },
+
+  # Reverse proxy with no-cache security
+  reverse_proxy = {
+    enabled = true,
+    cache_policy = 'NoStore,
+
+    # Strip all identifying headers
+    strip_headers = [
+      "Server",
+      "X-Powered-By",
+      "X-AspNet-Version",
+      "X-AspNetMvc-Version",
+      "X-Runtime",
+      "X-Version",
+      "Via",
+      "X-Cache",
+      "X-Cache-Hits",
+      "X-Served-By",
+      "X-Timer",
+      "X-Request-Id",
+      "X-Correlation-Id",
+      "X-Amzn-RequestId",
+      "X-B3-TraceId",
+      "X-B3-SpanId",
+      "X-B3-ParentSpanId",
+    ],
+
+    # Add security headers
+    add_headers = {
+      "X-Content-Type-Options" = "nosniff",
+      "X-Frame-Options" = "DENY",
+      "X-XSS-Protection" = "0",
+      "Content-Security-Policy" = "default-src 'none'; frame-ancestors 'none'",
+      "Referrer-Policy" = "no-referrer",
+      "Permissions-Policy" = "accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()",
+      "Cross-Origin-Embedder-Policy" = "require-corp",
+      "Cross-Origin-Opener-Policy" = "same-origin",
+      "Cross-Origin-Resource-Policy" = "same-origin",
+    },
+
+    # Strict TLS settings
+    tls = {
+      min_version = "1.3",
+      max_version = "1.3",
+      ciphersuites = [
+        "TLS_AES_256_GCM_SHA384",
+        "TLS_CHACHA20_POLY1305_SHA256",
+      ],
+      # No TLS 1.2 ciphersuites - 1.3 only
+      require_client_cert = true,
+      ocsp_stapling = true,
+      ct_verification = true,
+    },
+  },
+
+  # LAN routing protection
+  lan_protection = {
+    enabled = true,
+
+    # IPv6 only - no IPv4 routing
+    ipv6_only = true,
+    ipv4_drop = true,
+
+    # Restrict to local link-local and ULA ranges
+    allowed_prefixes = [
+      "fe80::/10",   # Link-local
+      "fd00::/8",    # Unique local address (ULA)
+    ],
+
+    # No external routing
+    external_routing = false,
+
+    # Rate limiting
+    rate_limit = {
+      requests_per_second = 100,
+      burst = 10,
+      per_client = true,
+    },
+
+    # Connection limits
+    max_connections = 50,
+    max_connections_per_client = 5,
+    connection_timeout_seconds = 30,
+  },
+
+  # API acceptance options - explicit documentation
+  api_options = {
+    accept_json = {
+      enabled = true,
+      content_type = "application/json",
+      charset = "utf-8",
+      implication = "Request body parsed as JSON. Malformed JSON rejected.",
+    },
+
+    accept_cbor = {
+      enabled = true,
+      content_type = "application/cbor",
+      implication = "Binary CBOR format. More compact, same security.",
+    },
+
+    # No form data - API only
+    accept_form = {
+      enabled = false,
+      implication = "DISABLED: Form data not accepted for security.",
+    },
+
+    # No multipart - no file uploads via router
+    accept_multipart = {
+      enabled = false,
+      implication = "DISABLED: No file uploads through router.",
+    },
+
+    # No XML - attack surface reduction
+    accept_xml = {
+      enabled = false,
+      implication = "DISABLED: XML parsing disabled (XXE prevention).",
+    },
+  },
+
+  # Chroot jail configuration
+  chroot = {
+    enabled = true,
+    path = "/var/lib/svalinn/jail",
+
+    # Minimal mount points
+    mounts = [
+      { source = "/dev/null", target = "/dev/null", readonly = true },
+      { source = "/dev/urandom", target = "/dev/urandom", readonly = true },
+    ],
+
+    # No shell, no network tools
+    deny_executables = [
+      "/bin/sh", "/bin/bash", "/bin/zsh", "/bin/fish",
+      "/usr/bin/curl", "/usr/bin/wget", "/usr/bin/nc",
+      "/usr/bin/ssh", "/usr/bin/scp", "/usr/bin/rsync",
+    ],
+
+    # Drop all capabilities except minimal set
+    capabilities = {
+      drop_all = true,
+      keep = [], # No capabilities needed in jail
+    },
+  },
+
+  # Logging with no sensitive data
+  logging = {
+    enabled = true,
+    level = "warn",
+
+    # Never log these
+    redact = [
+      "Authorization",
+      "Cookie",
+      "Set-Cookie",
+      "X-Api-Key",
+      "X-Auth-Token",
+      "password",
+      "secret",
+      "token",
+      "key",
+    ],
+
+    # Minimal request logging
+    log_request_body = false,
+    log_response_body = false,
+    log_headers = false,
+    log_query_params = false,
+
+    # Only log security events
+    log_auth_failures = true,
+    log_rate_limits = true,
+    log_blocked_requests = true,
+  },
+}

@@ -1,20 +1,51 @@
 ---
-name: Feature request
-about: Suggest an idea for this project
-title: ''
-labels: 'enhancement, priority: unset, triage'
+name: Feature Request
+about: Suggest a new feature (security-first evaluation)
+title: '[FEATURE] '
+labels: 'enhancement, triage'
 assignees: ''
-
 ---
 
-**Is your feature request related to a problem? Please describe.**
-A clear and concise description of what the problem is. Ex. I'm always frustrated when [...]
+<!--
+╔════════════════════════════════════════════════════════════════╗
+║  MINIMUM PRINCIPLE: Only essential features are accepted.      ║
+║  Features that increase attack surface WILL BE REJECTED.       ║
+╚════════════════════════════════════════════════════════════════╝
+-->
 
-**Describe the solution you'd like**
-A clear and concise description of what you want to happen.
+## Pre-Submission Checklist
 
-**Describe alternatives you've considered**
-A clear and concise description of any alternative solutions or features you've considered.
+- [ ] This feature is absolutely necessary
+- [ ] This cannot be achieved with existing functionality
+- [ ] This follows the security-first principle
+- [ ] This doesn't increase attack surface
 
-**Additional context**
-Add any other context or screenshots about the feature request here.
+## Feature Description
+
+A clear and concise description of the feature.
+
+## Use Case
+
+Why is this feature needed? What problem does it solve?
+
+## Security Impact Assessment
+
+| Question | Answer |
+|----------|--------|
+| Does this increase attack surface? | [Yes/No/Unknown] |
+| Does this require new dependencies? | [Yes/No] - List them: |
+| Does this handle sensitive data? | [Yes/No] |
+| Can this feature be misused? | [Yes/No/Unknown] - How: |
+| Does this bypass any security controls? | [Yes/No] |
+
+## Proposed Implementation
+
+How might this be implemented? (Optional, but helpful)
+
+## Alternatives Considered
+
+What alternatives have you considered?
+
+## Additional Context
+
+Any other relevant information.

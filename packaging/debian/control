@@ -1,0 +1,33 @@
+Source: svalinn-vault
+Section: utils
+Priority: optional
+Maintainer: Hyperpolymath <security@hyperpolymath.example>
+Build-Depends: debhelper-compat (= 13), ats2, zig (>= 0.11), libssl-dev, libblake3-dev
+Standards-Version: 4.6.0
+Homepage: https://github.com/hyperpolymath/reasonable-good-token-vault
+Vcs-Browser: https://github.com/hyperpolymath/reasonable-good-token-vault
+Vcs-Git: https://github.com/hyperpolymath/reasonable-good-token-vault.git
+Rules-Requires-Root: no
+
+Package: svalinn-vault
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, libssl3, libblake3-1
+Recommends: selinux-policy-default, firewalld
+Suggests: wireguard-tools
+Description: Post-quantum secure identity vault
+ Svalinn Vault provides military-grade protection for digital identities
+ using post-quantum cryptography including Kyber-1024 and Dilithium5.
+ .
+ Features:
+  - Post-quantum key encapsulation (Kyber-1024)
+  - Post-quantum signatures (Dilithium5)
+  - Classical signatures (Ed448, Ed25519)
+  - AES-256-GCM authenticated encryption
+  - BLAKE3 hashing
+  - Argon2id key derivation (64 MiB memory)
+  - GUID-based storage with redaction
+  - chmod 000 lockdown when locked
+  - MFA with anti-AI CAPTCHA
+ .
+ WARNING: This is dual-use technology. Users are responsible for
+ compliance with applicable export control regulations.

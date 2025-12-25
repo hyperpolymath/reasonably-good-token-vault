@@ -1,0 +1,465 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-FileCopyrightText: 2025 Jonathan D.A. Jewell
+= Svalinn Vault Roadmap
+:toc: preamble
+:toclevels: 3
+:icons: font
+:sectnums:
+
+Development roadmap for Svalinn Vault with security-first prioritization.
+
+[WARNING]
+====
+*DUAL-USE TECHNOLOGY WARNING*
+
+This project implements advanced cryptographic and security technologies that may have dual-use implications under various export control regimes. Development and distribution must comply with:
+
+* Wassenaar Arrangement Category 5 Part 2 (Cryptography)
+* U.S. Export Administration Regulations (EAR)
+* EU Dual-Use Regulation (2021/821)
+* UK Strategic Export Controls
+
+Contributors and users are responsible for ensuring compliance with applicable laws in their jurisdiction. The maintainers provide no warranty of compliance and accept no liability for regulatory violations.
+====
+
+== Version 1.0.0 Requirements
+
+=== Core Security (Required for v1.0.0)
+
+[cols="1,2,1"]
+|===
+|Feature |Description |Status
+
+|Post-Quantum KEM
+|Kyber-1024 (ML-KEM) key encapsulation
+|✅ Complete
+
+|Post-Quantum Signatures
+|Dilithium5 (ML-DSA) digital signatures
+|✅ Complete
+
+|Classical Signatures
+|Ed448 Edwards curve signatures
+|✅ Complete
+
+|Authenticated Encryption
+|AES-256-GCM with BLAKE3 key derivation
+|✅ Complete
+
+|Memory-Hard KDF
+|Argon2id with 64 MiB memory minimum
+|✅ Complete
+
+|Strong Prime Verification
+|Miller-Rabin with 64 rounds
+|✅ Complete
+
+|QRNG Integration
+|ANU Quantum RNG with decoy calls
+|✅ Complete
+
+|Time-Locking
+|UTC-synchronized access windows
+|✅ Complete
+
+|MFA Implementation
+|TOTP with configurable parameters
+|✅ Complete
+
+|Anti-AI CAPTCHA
+|Post-quantum visual challenges
+|✅ Complete
+
+|Password Policy
+|16+ chars, all classes, breach check, rotation
+|✅ Complete
+
+|File Lockdown
+|chmod 000 on lock, chroot isolation
+|✅ Complete
+
+|Polymorphic Obfuscation
+|Quantum-seeded code transformation
+|✅ Complete
+
+|Metamorphic Evolution
+|Transform structure changes per lock
+|✅ Complete
+|===
+
+=== Storage Architecture (Required for v1.0.0)
+
+[cols="1,2,1"]
+|===
+|Feature |Description |Status
+
+|GUID-Based Storage
+|All credentials stored as UUIDs
+|✅ Complete
+
+|Flat Structure
+|No folder creation in data container
+|⚠️ Needs Implementation
+
+|Name Redaction
+|Names hashed until delivery
+|⚠️ Needs Implementation
+
+|Variable Redaction
+|All variables redacted until delivery
+|⚠️ Needs Implementation
+
+|Fragment Storage
+|Credentials split into fragments
+|✅ Complete
+
+|XTDB Integration
+|Search by GUID/hash only
+|⚠️ Needs Testing
+
+|CUBS Database
+|Primary credential storage
+|⚠️ Needs Implementation
+
+|Dragonfly Cache
+|Session caching layer
+|⚠️ Needs Implementation
+|===
+
+=== Container Architecture (Required for v1.0.0)
+
+[cols="1,2,1"]
+|===
+|Feature |Description |Status
+
+|Data Container
+|Isolated credential storage
+|⚠️ Needs Implementation
+
+|Delivery Container
+|Credential assembly zone
+|⚠️ Needs Implementation
+
+|API Socket Only
+|No other communication between containers
+|⚠️ Needs Implementation
+
+|Assembly on Delivery
+|Credentials only exist complete at delivery
+|⚠️ Needs Implementation
+
+|Memory Zeroing
+|Immediate cleanup after delivery
+|⚠️ Needs Implementation
+
+|SELinux Policy
+|svalinn_t type enforcement
+|✅ Complete
+
+|Read-Only Root
+|Immutable container filesystem
+|✅ Complete
+|===
+
+=== Network Security (Required for v1.0.0)
+
+[cols="1,2,1"]
+|===
+|Feature |Description |Status
+
+|IPv6 Only
+|Complete IPv4 lockdown
+|✅ Complete
+
+|AirVPN Integration
+|WireGuard configuration
+|✅ Complete
+
+|firewalld Configuration
+|DROP default policy
+|✅ Complete
+
+|IPv4 Honeypots
+|Detection on common ports
+|✅ Complete
+
+|Cadre Router
+|LAN routing protection
+|✅ Complete
+
+|Header Stripping
+|No version/server disclosure
+|✅ Complete
+
+|TLS 1.3 Only
+|No fallback to older versions
+|✅ Complete
+|===
+
+=== Interfaces (Required for v1.0.0)
+
+[cols="1,2,1"]
+|===
+|Feature |Description |Status
+
+|Ada CLI
+|Command-line interface
+|⚠️ Needs Implementation
+
+|Ada TUI
+|Terminal user interface
+|⚠️ Needs Implementation
+
+|ReScript Bindings
+|Type-safe web bindings
+|✅ Complete
+
+|Guile API
+|Scheme interface (USERMEMORY.scm)
+|✅ Complete
+|===
+
+=== Build & Deploy (Required for v1.0.0)
+
+[cols="1,2,1"]
+|===
+|Feature |Description |Status
+
+|Nix Flake
+|Reproducible builds
+|✅ Complete
+
+|Guix Package
+|Alternative reproducible builds
+|✅ Complete
+
+|Container Build
+|Podman/Docker support
+|✅ Complete
+
+|Justfile Tasks
+|Automated operations
+|✅ Complete
+
+|Mustfile Validation
+|Requirement enforcement
+|✅ Complete
+
+|Nickel Configuration
+|Type-checked config
+|✅ Complete
+
+|CI/CD Lockdown
+|Code change enforcement
+|✅ Complete
+
+|Signed Commits
+|GPG/SSH signature required
+|✅ Complete
+
+|Branch Protection
+|No force push, review required
+|✅ Complete
+|===
+
+=== Documentation (Required for v1.0.0)
+
+[cols="1,2,1"]
+|===
+|Feature |Description |Status
+
+|README.adoc
+|Comprehensive documentation
+|✅ Complete
+
+|CONTRIBUTING.adoc
+|Contribution guidelines
+|✅ Complete
+
+|SECURITY.md
+|Vulnerability reporting
+|✅ Complete
+
+|Liability Disclaimer
+|Dual-use warning, legal notice
+|✅ Complete
+
+|API Documentation
+|Interface specifications
+|⚠️ Needs Writing
+
+|Threat Model
+|Security assumptions documented
+|⚠️ Needs Writing
+|===
+
+=== Testing (Required for v1.0.0)
+
+[cols="1,2,1"]
+|===
+|Feature |Description |Status
+
+|Unit Tests
+|Core functionality coverage
+|⚠️ Needs Implementation
+
+|Integration Tests
+|Cross-component testing
+|⚠️ Needs Implementation
+
+|Property Tests
+|Proptest/QuickCheck
+|⚠️ Needs Implementation
+
+|Formal Verification
+|Echidna security properties
+|✅ Spec Complete
+
+|Fuzzing
+|cargo-fuzz integration
+|⚠️ Needs Implementation
+
+|Security Audit
+|cargo-audit, cargo-deny
+|✅ CI Configured
+|===
+
+== Version 1.0.0 Blockers
+
+The following MUST be completed before v1.0.0 release:
+
+=== Critical Path
+
+1. *Implement flat GUID storage* - No folder creation in data container
+2. *Implement name/variable redaction* - Hash all identifying information
+3. *Build two-container architecture* - Data and delivery containers
+4. *Implement API socket isolation* - Only communication path
+5. *Implement credential assembly* - Delivery container assembles from fragments
+6. *Complete Ada CLI/TUI* - Primary user interface
+7. *Write comprehensive tests* - Unit, integration, property-based
+8. *Write threat model* - Document security assumptions
+9. *Third-party security audit* - External verification
+
+=== Estimated Work
+
+[NOTE]
+====
+These are engineering tasks, not time estimates. Scheduling is the responsibility of contributors and maintainers.
+====
+
+* Flat GUID storage: Modify CUBS integration, XTDB queries
+* Redaction system: Implement hash lookup table, redact/reveal functions
+* Two-container architecture: Split current container, implement API socket IPC
+* Ada CLI/TUI: Complete svalinn-cli implementation
+* Testing: Write tests to match current specification
+* Documentation: Complete API docs, threat model
+
+== Future Versions
+
+=== Version 1.1.0 (Post-Launch)
+
+* Hardware security module (HSM) support
+* Yubikey/FIDO2 integration
+* Hardware wallet integration (Ledger, Trezor)
+* Improved agrep fuzzy matching
+* Pandoc name translation pipeline
+* aspell/hunspell dictionary integration
+
+=== Version 1.2.0 (Platform Expansion)
+
+* iOS/Android support via Tauri 2.0
+* macOS Keychain integration
+* Windows Credential Manager bridge
+* Biometric authentication (Touch ID, Face ID)
+
+=== Version 2.0.0 (Advanced Features)
+
+* Distributed vault federation
+* Multi-party computation (MPC) for key splitting
+* Threshold signatures (t-of-n)
+* Zero-knowledge proof authentication
+* Homomorphic encryption for cloud backup
+
+=== Version 2.1.0 (Enterprise)
+
+* LDAP/Active Directory integration
+* SAML/OIDC federation
+* Audit trail with blockchain anchoring
+* Compliance reporting (SOC2, HIPAA)
+
+== Liability Minimization
+
+=== Legal Safeguards
+
+To minimize liability, this project:
+
+1. *Provides no warranties* - "AS IS" distribution
+2. *Makes no security claims* - Users assume all risk
+3. *Requires independent audit* - Before production use
+4. *Documents all limitations* - Transparent about what it cannot do
+5. *Includes export warnings* - Dual-use technology acknowledgment
+
+=== Technical Safeguards
+
+1. *No storage of plaintext* - Everything encrypted at rest
+2. *No network exposure* - API socket only
+3. *No persistent secrets in memory* - Zeroed after use
+4. *No logging of credentials* - Redaction in all logs
+5. *No default configurations* - User must explicitly configure
+
+=== Contributor Protections
+
+1. *SPDX headers required* - Clear licensing
+2. *Signed commits required* - Attribution chain
+3. *No proprietary dependencies* - FOSS only
+4. *No cloud services* - Self-hosted only
+
+== Security Considerations
+
+=== What This Project IS
+
+* A local, offline-first identity vault
+* A post-quantum prepared credential store
+* A maximally paranoid security implementation
+* A defense-in-depth architecture example
+
+=== What This Project IS NOT
+
+* A password manager (use Bitwarden, etc.)
+* A secrets management service (use Vault, SOPS)
+* A production-ready enterprise solution (needs audit)
+* A silver bullet for security
+
+=== Known Limitations
+
+1. *Side-channel attacks* - Not resistant to physical access
+2. *Quantum computers* - Future cryptanalytic advances may succeed
+3. *Implementation bugs* - Software may contain undiscovered flaws
+4. *Human error* - Social engineering bypasses technical controls
+5. *Legal compulsion* - Cryptography cannot protect against court orders
+
+=== Recommended Use Cases
+
+* Personal credential storage
+* Developer token management
+* Research and education
+* Security architecture reference
+
+=== Not Recommended For
+
+* Nation-state threat models (use air-gapped systems)
+* High-value financial secrets (use HSMs)
+* Regulated industries (needs compliance certification)
+* Non-technical users (complex setup required)
+
+== Contributing to the Roadmap
+
+See link:CONTRIBUTING.adoc[CONTRIBUTING.adoc] for contribution guidelines.
+
+Roadmap items can be proposed via:
+
+1. GitHub Issues (for non-security items)
+2. Security email (for security-related proposals)
+3. Pull requests with implementation
+
+All roadmap changes require maintainer approval and security review.
