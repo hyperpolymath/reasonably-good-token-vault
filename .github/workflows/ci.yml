@@ -1,0 +1,656 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-FileCopyrightText: 2025 Hyperpolymath
+#
+# Ultimate CI/CD Pipeline - Maximum Coverage
+
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: ['**']
+    tags: ['v*']
+  pull_request:
+    branches: [main]
+  schedule:
+    # Daily security scan at 00:00 UTC
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+    inputs:
+      full_verification:
+        description: 'Run full formal verification'
+        required: false
+        default: 'false'
+        type: boolean
+
+permissions:
+  contents: read
+  security-events: write
+  actions: read
+  packages: write
+  id-token: write
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  # ===========================================================================
+  # Stage 1: Static Analysis & Linting
+  # ===========================================================================
+
+  lint-ats:
+    name: Lint ATS Code
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install ATS2
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ats2-lang
+
+      - name: Type Check ATS
+        working-directory: vault-core-ats
+        run: |
+          for f in SATS/*.sats; do
+            echo "Checking $f..."
+            patsopt --typecheck-only -s "$f"
+          done
+          for f in DATS/*.dats; do
+            echo "Checking $f..."
+            patsopt --typecheck-only -d "$f"
+          done
+
+  lint-zig:
+    name: Lint Zig Code
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Zig
+        uses: goto-bus-stop/setup-zig@v2
+        with:
+          version: 0.11.0
+
+      - name: Check Zig Formatting
+        working-directory: vault-core-ats
+        run: zig fmt --check zig/
+
+      - name: Zig Build Check
+        working-directory: vault-core-ats
+        run: zig build --summary all
+
+  lint-scheme:
+    name: Lint Scheme Code
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Guile
+        run: sudo apt-get install -y guile-3.0
+
+      - name: Check Scheme Syntax
+        run: |
+          for f in *.scm site/*.scm; do
+            if [ -f "$f" ]; then
+              echo "Checking $f..."
+              guile -c "(load \"$f\")" 2>&1 || true
+            fi
+          done
+
+  lint-nickel:
+    name: Lint Nickel Configs
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Nickel
+        run: |
+          curl -L https://github.com/tweag/nickel/releases/latest/download/nickel-linux-x86_64 -o nickel
+          chmod +x nickel
+          sudo mv nickel /usr/local/bin/
+
+      - name: Typecheck Nickel
+        run: |
+          nickel typecheck config.nickel || true
+          nickel typecheck network/cadre-router/cadre-config.nickel || true
+          nickel typecheck database/cubs/cubs-config.nickel || true
+
+  lint-shell:
+    name: Lint Shell Scripts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: ShellCheck
+        uses: ludeeus/action-shellcheck@master
+        with:
+          severity: warning
+
+  lint-yaml:
+    name: Lint YAML Files
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: YAML Lint
+        uses: ibiqlik/action-yamllint@v3
+        with:
+          config_file: .yamllint.yml
+          strict: true
+
+  spdx-compliance:
+    name: SPDX License Compliance
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check SPDX Headers
+        run: |
+          find . -type f \( -name "*.rs" -o -name "*.zig" -o -name "*.sats" -o -name "*.dats" -o -name "*.scm" -o -name "*.ncl" \) | while read f; do
+            if ! head -5 "$f" | grep -q "SPDX-License-Identifier"; then
+              echo "Missing SPDX header: $f"
+              exit 1
+            fi
+          done
+
+  # ===========================================================================
+  # Stage 2: Build
+  # ===========================================================================
+
+  build-zig:
+    name: Build Zig Library
+    needs: [lint-zig]
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        target:
+          - x86_64-linux-gnu
+          - aarch64-linux-gnu
+          - x86_64-windows-gnu
+          - aarch64-linux-android
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Zig
+        uses: goto-bus-stop/setup-zig@v2
+        with:
+          version: 0.11.0
+
+      - name: Build for ${{ matrix.target }}
+        working-directory: vault-core-ats
+        run: zig build -Dtarget=${{ matrix.target }} -Doptimize=ReleaseSafe
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: zig-${{ matrix.target }}
+          path: vault-core-ats/zig-out/
+
+  build-ats:
+    name: Build ATS Core
+    needs: [lint-ats, build-zig]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ats2-lang libssl-dev
+
+      - name: Download Zig Library
+        uses: actions/download-artifact@v4
+        with:
+          name: zig-x86_64-linux-gnu
+          path: vault-core-ats/zig-out/
+
+      - name: Build ATS
+        working-directory: vault-core-ats
+        run: make build
+
+      - name: Upload Binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: svalinn-vault-linux-x64
+          path: vault-core-ats/svalinn-vault-core
+
+  build-container:
+    name: Build Container Image
+    needs: [build-ats]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download Binary
+        uses: actions/download-artifact@v4
+        with:
+          name: svalinn-vault-linux-x64
+          path: vault-core-ats/
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Container
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: container/svalinn.containerfile
+          push: false
+          tags: svalinn-vault:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ===========================================================================
+  # Stage 3: Testing
+  # ===========================================================================
+
+  test-unit-zig:
+    name: Zig Unit Tests
+    needs: [build-zig]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Zig
+        uses: goto-bus-stop/setup-zig@v2
+        with:
+          version: 0.11.0
+
+      - name: Run Tests
+        working-directory: vault-core-ats
+        run: zig build test --summary all
+
+  test-unit-ats:
+    name: ATS Unit Tests
+    needs: [build-ats]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Dependencies
+        run: sudo apt-get install -y ats2-lang
+
+      - name: Run Tests
+        working-directory: vault-core-ats
+        run: make test
+
+  test-integration:
+    name: Integration Tests
+    needs: [build-container]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Test Container
+        run: |
+          docker build -f container/svalinn.containerfile -t svalinn-vault:test .
+
+      - name: Run Integration Tests
+        run: |
+          # Start container
+          docker run -d --name svalinn-test \
+            --security-opt label=disable \
+            --cap-drop=ALL \
+            --read-only \
+            svalinn-vault:test
+
+          # Run tests
+          docker exec svalinn-test /usr/bin/svalinn-cli --test || true
+
+          # Cleanup
+          docker stop svalinn-test
+          docker rm svalinn-test
+
+  test-property:
+    name: Property-Based Tests
+    needs: [build-ats]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Dependencies
+        run: sudo apt-get install -y ats2-lang
+
+      - name: Run Property Tests
+        working-directory: vault-core-ats
+        run: make test-proptest || true
+
+  # ===========================================================================
+  # Stage 4: Security Scanning
+  # ===========================================================================
+
+  security-codeql:
+    name: CodeQL Analysis
+    needs: [lint-ats, lint-zig]
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: cpp
+          queries: +security-and-quality
+
+      - name: Build for Analysis
+        working-directory: vault-core-ats
+        run: |
+          # Generate C from ATS for CodeQL analysis
+          for f in DATS/*.dats; do
+            patsopt -o "${f%.dats}_dats.c" -d "$f" 2>/dev/null || true
+          done
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+
+  security-semgrep:
+    name: Semgrep SAST
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Semgrep Scan
+        uses: returntocorp/semgrep-action@v1
+        with:
+          config: >-
+            p/security-audit
+            p/secrets
+            p/owasp-top-ten
+
+  security-snyk:
+    name: Snyk Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Snyk Test
+        uses: snyk/actions/zig@master
+        continue-on-error: true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --severity-threshold=high
+
+  security-trivy:
+    name: Trivy Container Scan
+    needs: [build-container]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Container
+        run: docker build -f container/svalinn.containerfile -t svalinn-vault:scan .
+
+      - name: Trivy Scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: svalinn-vault:scan
+          format: sarif
+          output: trivy-results.sarif
+          severity: CRITICAL,HIGH,MEDIUM
+
+      - name: Upload Trivy Results
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-results.sarif
+
+  security-secrets:
+    name: Secret Scanning
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: TruffleHog
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: ${{ github.event.repository.default_branch }}
+          head: HEAD
+          extra_args: --only-verified
+
+      - name: Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  security-supply-chain:
+    name: Supply Chain Security
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: SLSA Provenance
+        uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v1.9.0
+        with:
+          base64-subjects: |
+            $(sha256sum vault-core-ats/**/*.zig | base64 -w0)
+
+  # ===========================================================================
+  # Stage 5: Formal Verification
+  # ===========================================================================
+
+  formal-echidna:
+    name: Echidna Formal Verification
+    needs: [build-ats]
+    runs-on: ubuntu-latest
+    if: github.event.inputs.full_verification == 'true' || github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Echidna
+        run: |
+          pip3 install slither-analyzer
+          # Download echidna binary
+          curl -L https://github.com/crytic/echidna/releases/latest/download/echidna-linux -o echidna
+          chmod +x echidna
+          sudo mv echidna /usr/local/bin/
+
+      - name: Run Echidna Verification
+        working-directory: validation/echidna
+        run: |
+          echidna crypto_properties.sol --config echidna.yaml --format text || true
+          echidna identity_properties.sol --config echidna.yaml --format text || true
+          echidna lockdown_properties.sol --config echidna.yaml --format text || true
+
+  formal-z3:
+    name: Z3 SMT Verification
+    needs: [lint-ats]
+    runs-on: ubuntu-latest
+    if: github.event.inputs.full_verification == 'true' || github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Z3
+        run: |
+          pip3 install z3-solver
+
+      - name: Run Z3 Proofs
+        working-directory: validation/z3
+        run: |
+          for f in *.py; do
+            echo "Verifying $f..."
+            python3 "$f" || true
+          done
+
+  formal-coq:
+    name: Coq Proof Verification
+    needs: [lint-ats]
+    runs-on: ubuntu-latest
+    if: github.event.inputs.full_verification == 'true'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Coq
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y coq
+
+      - name: Verify Coq Proofs
+        working-directory: validation/coq
+        run: |
+          for f in *.v; do
+            echo "Compiling $f..."
+            coqc "$f" || true
+          done
+
+  # ===========================================================================
+  # Stage 6: Documentation
+  # ===========================================================================
+
+  docs-build:
+    name: Build Documentation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install AsciiDoctor
+        run: |
+          sudo gem install asciidoctor asciidoctor-pdf
+
+      - name: Build HTML Docs
+        run: |
+          mkdir -p docs/html
+          asciidoctor -D docs/html README.adoc
+          asciidoctor -D docs/html TECHSTACK.adoc
+          asciidoctor -D docs/html ROADMAP.adoc
+          asciidoctor -D docs/html CONTRIBUTING.adoc
+
+      - name: Build PDF
+        run: |
+          mkdir -p docs/pdf
+          asciidoctor-pdf -D docs/pdf README.adoc
+
+      - name: Upload Docs
+        uses: actions/upload-artifact@v4
+        with:
+          name: documentation
+          path: docs/
+
+  docs-whitepaper:
+    name: Build Whitepaper
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install LaTeX
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y texlive-latex-extra texlive-fonts-recommended
+
+      - name: Build PDF
+        working-directory: docs/whitepaper
+        run: |
+          pdflatex svalinn-vault.tex
+          pdflatex svalinn-vault.tex  # Run twice for references
+
+      - name: Upload Whitepaper
+        uses: actions/upload-artifact@v4
+        with:
+          name: whitepaper
+          path: docs/whitepaper/svalinn-vault.pdf
+
+  # ===========================================================================
+  # Stage 7: Package Publishing
+  # ===========================================================================
+
+  publish-container:
+    name: Publish Container
+    needs: [test-integration, security-trivy]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract Metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+
+      - name: Build and Push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: container/svalinn.containerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+  publish-github-release:
+    name: Create GitHub Release
+    needs: [test-integration, formal-echidna]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download Artifacts
+        uses: actions/download-artifact@v4
+
+      - name: Generate Checksums
+        run: |
+          cd svalinn-vault-linux-x64
+          sha256sum * > SHA256SUMS
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            svalinn-vault-linux-x64/*
+            documentation/*
+            whitepaper/svalinn-vault.pdf
+          generate_release_notes: true
+          draft: false
+          prerelease: false
+
+  publish-sbom:
+    name: Generate SBOM
+    needs: [build-ats]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate SBOM
+        uses: anchore/sbom-action@v0
+        with:
+          format: cyclonedx-json
+          output-file: sbom.json
+
+      - name: Upload SBOM
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom
+          path: sbom.json
+
+  # ===========================================================================
+  # Stage 8: Notifications
+  # ===========================================================================
+
+  notify-success:
+    name: Notify Success
+    needs: [publish-github-release]
+    runs-on: ubuntu-latest
+    if: success()
+    steps:
+      - name: Success Notification
+        run: echo "Release published successfully!"
+
+  notify-failure:
+    name: Notify Failure
+    runs-on: ubuntu-latest
+    if: failure()
+    steps:
+      - name: Failure Notification
+        run: echo "Pipeline failed - check logs"

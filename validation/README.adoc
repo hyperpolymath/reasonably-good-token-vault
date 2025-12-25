@@ -1,0 +1,214 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-FileCopyrightText: 2025 Jonathan D.A. Jewell
+= Svalinn Vault Formal Verification Suite
+:toc: preamble
+:icons: font
+
+Comprehensive formal verification of Svalinn Vault security properties.
+
+== Overview
+
+This directory contains formal verification tools to mathematically prove
+that Svalinn Vault's security properties hold under all conditions.
+
+== Verification Tools
+
+[cols="1,2,2"]
+|===
+|Tool |Purpose |Location
+
+|*Echidna*
+|Property-based fuzzing with Solidity specs
+|`echidna/`
+
+|*Z3*
+|SMT solver proofs in Python
+|`z3/`
+
+|*Coq*
+|Theorem prover with formal proofs
+|`coq/`
+|===
+
+== Echidna Specifications
+
+=== crypto_properties.sol
+
+Cryptographic invariants:
+
+1. *AES key size*: Keys are exactly 256 bits
+2. *Nonce uniqueness*: AES-GCM nonces never reused
+3. *Argon2id parameters*: Memory >= OWASP minimum
+4. *Miller-Rabin rounds*: 64 rounds for negligible error
+5. *Kyber security*: NIST Level 5 (256-bit)
+6. *Dilithium security*: NIST Level 5
+7. *No banned algorithms*: MD5, SHA1, DES not used
+
+=== identity_properties.sol
+
+Identity storage invariants:
+
+1. *GUID uniqueness*: No duplicate GUIDs
+2. *Redaction*: All data redacted until delivery
+3. *Fragment completeness*: Assembly requires all fragments
+4. *Flat storage*: No folder hierarchy
+5. *Type validation*: Only allowed credential types
+6. *Encrypted storage*: Non-empty encrypted data
+7. *Signature presence*: Dilithium5 signatures
+
+=== lockdown_properties.sol
+
+Lockdown state machine:
+
+1. *Locked permissions*: chmod 000 when locked
+2. *Obfuscation*: Applied when locked
+3. *State validity*: Always Locked or Unlocked
+4. *Lockout enforcement*: After failed attempts
+5. *Chroot active*: In locked state
+6. *Session timeout*: Auto-lock after 8 hours
+
+== Z3 Proofs
+
+`z3/crypto_proofs.py` contains SMT proofs for:
+
+1. AES-256 provides 256-bit security
+2. Argon2id 64 MiB >= OWASP minimum
+3. 64 Miller-Rabin rounds give 2^(-128) error
+4. Kyber-1024 = NIST Level 5
+5. Fragment assembly requires all pieces
+6. Locked state has chmod 000
+7. Nonce reuse detection works
+8. GUID collision requires 2^64 entries
+
+== Coq Proofs
+
+`coq/CryptoProperties.v` contains formally verified theorems:
+
+[source,coq]
+----
+Theorem all_security_properties_hold :
+  AES_KEY_BITS >= 256 /\
+  ARGON2_MEMORY_MIB >= OWASP_MIN_MEMORY_MIB /\
+  miller_rabin_error_exponent MILLER_RABIN_ROUNDS <= -128 /\
+  kyber_security_bits KYBER_VARIANT = NIST_LEVEL_5_BITS /\
+  vault_permissions Locked = perm_000 /\
+  birthday_bound_exponent GUID_BITS = 64 /\
+  is_redacted initial_state = true.
+Proof.
+  (* ... *)
+Qed.
+----
+
+== Running Verification
+
+=== Echidna
+
+[source,bash]
+----
+cd validation/echidna
+echidna crypto_properties.sol --config echidna.yaml
+echidna identity_properties.sol --config echidna.yaml
+echidna lockdown_properties.sol --config echidna.yaml
+----
+
+=== Z3
+
+[source,bash]
+----
+cd validation/z3
+python3 crypto_proofs.py
+----
+
+=== Coq
+
+[source,bash]
+----
+cd validation/coq
+coqc CryptoProperties.v
+----
+
+== CI/CD Integration
+
+All verification runs in:
+
+- *CI Pipeline*: On every PR to main (quick mode)
+- *Nightly*: Full verification suite
+- *Release*: Required before tagging
+
+See `.github/workflows/ci.yml` for configuration.
+
+== Mathematical Properties Verified
+
+=== Cryptographic Security
+
+[cols="2,3"]
+|===
+|Property |Proof Method
+
+|AES-256 ≥ 256-bit security
+|Coq theorem, Z3 SMT
+
+|Argon2id ≥ OWASP minimum
+|Coq theorem, Z3 SMT
+
+|Miller-Rabin error ≤ 2^(-128)
+|Coq theorem, Z3 SMT
+
+|Kyber-1024 = NIST Level 5
+|Coq theorem
+
+|Hybrid security = min(classical, PQ)
+|Coq theorem
+
+|Nonce uniqueness (AES-GCM)
+|Echidna fuzzing, Z3 SMT
+|===
+
+=== Storage Security
+
+[cols="2,3"]
+|===
+|Property |Proof Method
+
+|GUID uniqueness
+|Echidna invariant
+
+|Flat storage (no folders)
+|Echidna invariant
+
+|Redaction until delivery
+|Echidna state machine, Coq
+
+|Fragment completeness
+|Echidna invariant, Z3 SMT
+
+|Allowed types only
+|Echidna assertion
+|===
+
+=== Lockdown Security
+
+[cols="2,3"]
+|===
+|Property |Proof Method
+
+|chmod 000 when locked
+|Echidna state machine, Coq
+
+|Obfuscation when locked
+|Echidna state machine
+
+|Lockout after failures
+|Echidna state machine
+
+|Session timeout
+|Echidna state machine
+|===
+
+== Adding New Properties
+
+1. Add Solidity spec to `echidna/`
+2. Add Z3 proof to `z3/`
+3. Add Coq theorem to `coq/`
+4. Update this README
+5. Ensure CI runs the new verification

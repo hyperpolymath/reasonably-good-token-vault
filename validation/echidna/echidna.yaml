@@ -1,0 +1,43 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-FileCopyrightText: 2025 Hyperpolymath
+#
+# Echidna Configuration for Svalinn Vault Verification
+
+# Test configuration
+testLimit: 100000
+shrinkLimit: 5000
+seqLen: 100
+
+# Coverage
+corpusDir: "echidna-corpus"
+coverage: true
+
+# Property testing
+testMode: "property"
+prefix: "echidna_"
+
+# Assertion testing
+checkAsserts: true
+
+# Exploration
+allContracts: false
+balanceContract: 0
+balanceAddr: 0
+
+# Filtering
+filterBlacklist: true
+filterFunctions:
+  - "constructor"
+
+# Solc
+solcArgs: "--optimize --optimize-runs 200"
+
+# Gas
+maxGas: 12500000
+maxValue: 0
+
+# Mutator
+mutConsts: [1, 1, 1, 1]
+
+# Format
+format: "text"

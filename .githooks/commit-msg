@@ -1,0 +1,48 @@
+#!/bin/bash
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-FileCopyrightText: 2025 Hyperpolymath
+#
+# Commit message validation hook
+
+set -euo pipefail
+
+COMMIT_MSG_FILE=$1
+COMMIT_MSG=$(cat "$COMMIT_MSG_FILE")
+
+# ===========================================================================
+# Conventional Commits format
+# ===========================================================================
+# Type must be one of: feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert
+PATTERN="^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\(.+\))?: .{1,72}$"
+
+# Get first line
+FIRST_LINE=$(echo "$COMMIT_MSG" | head -1)
+
+if ! echo "$FIRST_LINE" | grep -qE "$PATTERN"; then
+    echo "ERROR: Invalid commit message format!"
+    echo ""
+    echo "Expected format: <type>(<scope>): <description>"
+    echo ""
+    echo "Types: feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert"
+    echo "Scope: optional, in parentheses"
+    echo "Description: max 72 characters, lowercase start"
+    echo ""
+    echo "Examples:"
+    echo "  feat(crypto): add Kyber-1024 key encapsulation"
+    echo "  fix: resolve memory leak in lockdown module"
+    echo "  docs: update README with installation instructions"
+    echo ""
+    echo "Your message: $FIRST_LINE"
+    exit 1
+fi
+
+# ===========================================================================
+# Check for security-related keywords that need special handling
+# ===========================================================================
+SECURITY_KEYWORDS="password|secret|token|key|credential|auth|crypto"
+if echo "$COMMIT_MSG" | grep -iqE "$SECURITY_KEYWORDS"; then
+    echo "NOTE: Security-related commit detected."
+    echo "Ensure no secrets are included in the commit."
+fi
+
+exit 0
