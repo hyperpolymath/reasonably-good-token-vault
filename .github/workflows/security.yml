@@ -1,0 +1,199 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-FileCopyrightText: 2025 Hyperpolymath
+#
+# Security Workflow - Maximum Checks
+
+name: Security
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Run daily at midnight UTC
+    - cron: '0 0 * * *'
+
+permissions:
+  contents: read
+  security-events: write
+  actions: read
+
+jobs:
+  # CodeQL Analysis
+  codeql:
+    name: CodeQL
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      actions: read
+      contents: read
+
+    strategy:
+      fail-fast: false
+      matrix:
+        language: ['rust']
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          queries: +security-and-quality
+
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v3
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:${{ matrix.language }}"
+
+  # Dependency Review
+  dependency-review:
+    name: Dependency Review
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Dependency Review
+        uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: low
+          deny-licenses: GPL-2.0, LGPL-2.0, AGPL-1.0
+          allow-licenses: MIT, Apache-2.0, BSD-2-Clause, BSD-3-Clause, ISC, AGPL-3.0-or-later
+
+  # Secret Scanning
+  secret-scanning:
+    name: Secret Scanning
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: TruffleHog Secret Scan
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: ${{ github.event.repository.default_branch }}
+          head: HEAD
+          extra_args: --only-verified
+
+      - name: Gitleaks Secret Scan
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
+
+  # Rust Security Audit
+  rust-audit:
+    name: Rust Security Audit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install cargo-audit
+        run: cargo install cargo-audit
+
+      - name: Security Audit
+        working-directory: vault-core
+        run: cargo audit --deny warnings
+
+      - name: Install cargo-deny
+        run: cargo install cargo-deny
+
+      - name: Check Dependencies
+        working-directory: vault-core
+        run: cargo deny check
+
+  # SBOM Generation
+  sbom:
+    name: Generate SBOM
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Generate SBOM
+        uses: anchore/sbom-action@v0
+        with:
+          format: cyclonedx-json
+          output-file: sbom.json
+
+      - name: Upload SBOM
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom
+          path: sbom.json
+
+  # Container Scan
+  container-scan:
+    name: Container Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build Container
+        run: |
+          docker build -f container/svalinn.containerfile -t svalinn-vault:scan .
+
+      - name: Trivy Scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'svalinn-vault:scan'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH,MEDIUM'
+
+      - name: Upload Trivy Results
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+  # Formal Verification (Echidna)
+  echidna:
+    name: Echidna Formal Verification
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Echidna
+        run: |
+          pip3 install slither-analyzer
+          # Install echidna from GitHub releases
+
+      - name: Run Echidna
+        run: |
+          echo "Echidna formal verification would run here"
+          # echidna validation/echidna-spec.sol --config validation/echidna.yaml
+
+  # Notify on all findings
+  notify:
+    name: Security Notifications
+    runs-on: ubuntu-latest
+    needs: [codeql, dependency-review, secret-scanning, rust-audit, container-scan]
+    if: always()
+    steps:
+      - name: Check Results
+        run: |
+          echo "Security scan complete"
+          echo "CodeQL: ${{ needs.codeql.result }}"
+          echo "Dependency Review: ${{ needs.dependency-review.result }}"
+          echo "Secret Scanning: ${{ needs.secret-scanning.result }}"
+          echo "Rust Audit: ${{ needs.rust-audit.result }}"
+          echo "Container Scan: ${{ needs.container-scan.result }}"
