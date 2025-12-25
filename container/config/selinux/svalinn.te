@@ -1,0 +1,152 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-FileCopyrightText: 2025 Hyperpolymath
+#
+# SELinux Type Enforcement policy for Svalinn Vault
+#
+# Security constraints:
+# - No network access except via WireGuard tunnel
+# - No access to host filesystem
+# - No IPC with other containers
+# - Memory protection (W^X)
+# - Restricted capability set
+
+policy_module(svalinn, 1.0.0)
+
+########################################
+# Type declarations
+########################################
+
+# Svalinn vault process type
+type svalinn_t;
+type svalinn_exec_t;
+
+# Svalinn data types
+type svalinn_data_t;          # Encrypted vault data
+type svalinn_config_t;        # Configuration files
+type svalinn_keys_t;          # Cryptographic keys
+type svalinn_audit_t;         # Audit logs
+type svalinn_tmp_t;           # Temporary files
+type svalinn_cache_t;         # Dragonfly cache
+
+# Network types
+type svalinn_wg_t;            # WireGuard interface
+type svalinn_port_t;          # Vault API port
+
+########################################
+# Process domain
+########################################
+
+# Mark as application domain
+application_domain(svalinn_t, svalinn_exec_t)
+
+# Define domain transition
+domain_entry_file(svalinn_t, svalinn_exec_t)
+role system_r types svalinn_t;
+
+########################################
+# File permissions
+########################################
+
+# Vault data - read/write only by svalinn_t
+allow svalinn_t svalinn_data_t:dir { create add_name remove_name write read getattr search };
+allow svalinn_t svalinn_data_t:file { create read write getattr setattr unlink lock };
+
+# Configuration - read only
+allow svalinn_t svalinn_config_t:dir { read getattr search };
+allow svalinn_t svalinn_config_t:file { read getattr };
+
+# Keys - highly restricted
+allow svalinn_t svalinn_keys_t:dir { read getattr search };
+allow svalinn_t svalinn_keys_t:file { read getattr };
+
+# Audit logs - append only
+allow svalinn_t svalinn_audit_t:dir { read write getattr search add_name };
+allow svalinn_t svalinn_audit_t:file { create read append getattr setattr };
+
+# Temporary files
+allow svalinn_t svalinn_tmp_t:dir { create add_name remove_name write read getattr search };
+allow svalinn_t svalinn_tmp_t:file { create read write getattr setattr unlink };
+
+# Cache files (Dragonfly)
+allow svalinn_t svalinn_cache_t:dir { create add_name remove_name write read getattr search };
+allow svalinn_t svalinn_cache_t:file { create read write getattr setattr unlink lock };
+
+########################################
+# Network permissions
+########################################
+
+# Allow WireGuard interface only
+allow svalinn_t svalinn_wg_t:netif { egress ingress };
+
+# Allow binding to vault port (8443)
+allow svalinn_t svalinn_port_t:tcp_socket { name_bind name_connect };
+
+# IPv6 only
+allow svalinn_t self:tcp_socket { create read write getattr setopt bind listen accept };
+allow svalinn_t self:udp_socket { create read write getattr setopt bind };
+
+# Deny all IPv4 (logged)
+dontaudit svalinn_t self:rawip_socket *;
+
+########################################
+# Capability restrictions
+########################################
+
+# Minimal capabilities
+allow svalinn_t self:capability { net_bind_service setuid setgid };
+
+# Deny dangerous capabilities
+dontaudit svalinn_t self:capability { sys_admin sys_rawio mknod net_admin };
+dontaudit svalinn_t self:capability2 { mac_admin mac_override };
+
+########################################
+# Memory protection
+########################################
+
+# W^X enforcement
+allow svalinn_t self:process { execmem };  # Required for JIT, but monitored
+
+# Memory mapping restrictions
+allow svalinn_t self:process { setcurrent signal_perms getsched };
+
+########################################
+# IPC restrictions
+########################################
+
+# No IPC with other domains
+dontaudit svalinn_t domain:shm *;
+dontaudit svalinn_t domain:sem *;
+dontaudit svalinn_t domain:msgq *;
+dontaudit svalinn_t domain:msg *;
+
+# Only internal Unix sockets
+allow svalinn_t self:unix_stream_socket { create read write getattr setopt bind listen accept };
+allow svalinn_t self:unix_dgram_socket { create read write getattr setopt bind };
+
+########################################
+# CUBS and XTDB restrictions
+########################################
+
+# CUBS database access only through svalinn
+type cubs_data_t;
+type xtdb_data_t;
+
+# svalinn can access CUBS
+allow svalinn_t cubs_data_t:dir { read write getattr search add_name remove_name };
+allow svalinn_t cubs_data_t:file { create read write getattr setattr unlink lock };
+
+# svalinn can access XTDB for indexing
+allow svalinn_t xtdb_data_t:dir { read write getattr search add_name remove_name };
+allow svalinn_t xtdb_data_t:file { create read write getattr setattr unlink lock };
+
+# No other domain can access CUBS directly
+neverallow ~svalinn_t cubs_data_t:file *;
+neverallow ~svalinn_t cubs_data_t:dir *;
+
+########################################
+# Logging and auditing
+########################################
+
+# Audit all access attempts
+auditallow svalinn_t svalinn_keys_t:file { read };
+auditallow svalinn_t svalinn_data_t:file { write };

@@ -1,0 +1,168 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-FileCopyrightText: 2025 Hyperpolymath
+#
+# CUBS Database Configuration for Svalinn Vault
+#
+# Security model:
+# - HOSTILE ENVIRONMENT ASSUMED AT ALL TIMES
+# - All data encrypted at rest with post-quantum algorithms
+# - No direct access - only through Svalinn polymorphic layer
+# - Dragonfly cache with encrypted values only
+# - All connections over WireGuard
+
+let Security = {
+  # Encryption configuration
+  encryption = {
+    algorithm = "AES-256-GCM",
+    kdf = "Argon2id",
+    kdf_memory = 65536,  # 64 MiB
+    kdf_time = 4,
+    kdf_parallelism = 4,
+    # Post-quantum key exchange
+    pq_kem = "Kyber-1024",
+    pq_sig = "Dilithium5",
+  },
+
+  # Hostile environment mitigations
+  hostile_mitigations = {
+    # Assume all network traffic is monitored
+    encrypt_all_traffic = true,
+    # Assume memory can be dumped
+    secure_memory_wipe = true,
+    # Assume filesystem is compromised
+    integrity_check_on_read = true,
+    # Assume timing attacks
+    constant_time_operations = true,
+    # Assume side-channel attacks
+    cache_timing_mitigation = true,
+  },
+
+  # Access control
+  access = {
+    # No direct access to CUBS
+    direct_access_forbidden = true,
+    # Must go through Svalinn vault
+    required_proxy = "svalinn-vault",
+    # Digital identity required
+    identity_binding = true,
+    # MFA required for all operations
+    mfa_required = true,
+  },
+} in
+
+let Database = {
+  # CUBS storage engine
+  storage = {
+    engine = "cubs",
+    data_dir = "/vault/cubs/data",
+    wal_dir = "/vault/cubs/wal",
+    # Encrypted at rest
+    encryption_at_rest = true,
+    encryption_key_path = "/vault/keys/cubs.key",
+  },
+
+  # Performance tuning
+  performance = {
+    max_connections = 10,  # Limited for security
+    connection_timeout_ms = 5000,
+    query_timeout_ms = 30000,
+    # Small cache - most caching in Dragonfly
+    internal_cache_mb = 32,
+  },
+
+  # Write-ahead log
+  wal = {
+    sync_mode = "fsync",  # Full durability
+    max_size_mb = 256,
+    checkpoint_interval_ms = 60000,
+  },
+} in
+
+let Dragonfly = {
+  # Dragonfly cache configuration
+  cache = {
+    bind = "127.0.0.1",
+    port = 6380,  # Non-standard port
+    # Memory limit
+    maxmemory = "512mb",
+    maxmemory_policy = "allkeys-lru",
+    # Only store encrypted values
+    encrypted_values_only = true,
+  },
+
+  # Security
+  security = {
+    # Require authentication
+    requirepass_file = "/vault/keys/dragonfly.key",
+    # TLS required
+    tls_enabled = true,
+    tls_cert_file = "/vault/keys/dragonfly.crt",
+    tls_key_file = "/vault/keys/dragonfly.key",
+    # No external access
+    bind_localhost_only = true,
+  },
+
+  # Persistence disabled - cache only
+  persistence = {
+    enabled = false,
+  },
+} in
+
+let XTDB_Proxy = {
+  # XTDB search proxy configuration
+  proxy = {
+    # XTDB can only access through this proxy
+    enabled = true,
+    # No direct CUBS access
+    cubs_access = "denied",
+    # Only receive pre-transformed data
+    data_transform = "polymorphic",
+  },
+
+  # Indexing configuration
+  indexing = {
+    # agrep-style fuzzy matching
+    fuzzy_enabled = true,
+    max_edit_distance = 2,
+    # Index only non-sensitive fields
+    indexed_fields = [
+      "identity.name",
+      "identity.type",
+      "identity.tags",
+      "identity.host",
+    ],
+    # Never index sensitive data
+    excluded_fields = [
+      "credential.*",
+      "secret.*",
+      "key.*",
+      "token.*",
+    ],
+  },
+} in
+
+{
+  version = "1.0.0",
+  security = Security,
+  database = Database,
+  dragonfly = Dragonfly,
+  xtdb_proxy = XTDB_Proxy,
+
+  # Version management (asdf-like)
+  version_management = {
+    tool = "mise",  # asdf-compatible
+    auto_update = true,
+    update_schedule = "0 */6 * * *",  # Every 6 hours
+    verify_checksums = true,
+    verify_signatures = true,
+  },
+
+  # Formal validation
+  validation = {
+    enabled = true,
+    tool = "echidna",
+    run_on_startup = true,
+    run_on_config_change = true,
+    fail_closed = true,  # Stop if validation fails
+  },
+}

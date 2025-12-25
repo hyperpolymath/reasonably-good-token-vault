@@ -1,0 +1,245 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later OR MIT
+# SPDX-FileCopyrightText: 2025 Hyperpolymath
+#
+# Maximum Security Hardening Configuration
+#
+# HOSTILE ENVIRONMENT ASSUMED AT ALL TIMES
+# All settings at maximum restriction
+
+let MaxHardening = {
+  # Resource records - maximum restriction
+  resource_limits = {
+    # Memory limits
+    max_memory_mb = 512,
+    max_heap_mb = 256,
+    max_stack_kb = 1024,
+
+    # File descriptors
+    max_open_files = 64,
+    max_file_size_mb = 100,
+
+    # Process limits
+    max_processes = 4,
+    max_threads = 16,
+
+    # Network limits
+    max_connections = 10,
+    max_pending_connections = 5,
+
+    # Time limits
+    max_cpu_time_secs = 300,
+    max_wall_time_secs = 600,
+  },
+
+  # SSH-equivalent alternate ports
+  alternate_ports = {
+    # Outer container (internet facing)
+    outer = {
+      primary = 22943,      # Non-standard SSH
+      secondary = 47822,    # Backup SSH
+      wireguard = 51820,    # WireGuard
+      api = 8443,           # HTTPS API
+    },
+    # Inner data container (isolated)
+    inner = {
+      ssh_equiv = 32222,    # Internal SSH-like
+      api = 9443,           # Internal API
+      cubs = 15432,         # CUBS database
+      xtdb = 19998,         # XTDB search
+      dragonfly = 16379,    # Dragonfly cache
+    },
+  },
+
+  # Git forge secret protection
+  gitforge_protection = {
+    # Auto-detect and protect secrets
+    auto_protect = true,
+
+    # Patterns to always protect
+    protected_patterns = [
+      "*.key",
+      "*.pem",
+      "*.p12",
+      "*.pfx",
+      "*.env",
+      "*.secret",
+      "*credentials*",
+      "*token*",
+      "*password*",
+      ".ssh/*",
+      ".gnupg/*",
+    ],
+
+    # Git hooks for protection
+    pre_commit_hook = true,
+    pre_push_hook = true,
+
+    # Encryption before push
+    encrypt_before_push = true,
+    encryption_algorithm = "AES-256-GCM",
+
+    # Secret scanning
+    scan_for_secrets = true,
+    block_on_secret_found = true,
+
+    # Allowed git forges
+    allowed_forges = [
+      "github.com",
+      "gitlab.com",
+      "codeberg.org",
+      "sr.ht",
+    ],
+  },
+
+  # Anonymization settings
+  anonymization = {
+    # Remove identifying metadata
+    strip_metadata = true,
+    strip_timestamps = true,
+    strip_author_info = false,  # Keep for attribution
+
+    # Obfuscation (code-preserving)
+    obfuscate_paths = true,
+    randomize_temp_names = true,
+
+    # Network anonymization
+    force_vpn = true,
+    tor_fallback = false,  # Use AirVPN instead
+
+    # MAC randomization
+    randomize_mac = true,
+    mac_rotation_minutes = 15,
+  },
+
+  # Maximum restrictions
+  restrictions = {
+    # Deny by default
+    default_deny = true,
+
+    # No root access
+    deny_root = true,
+
+    # No privileged containers
+    deny_privileged = true,
+
+    # No host networking
+    deny_host_network = true,
+
+    # No host PID namespace
+    deny_host_pid = true,
+
+    # Read-only root filesystem
+    readonly_root = true,
+
+    # No new privileges
+    no_new_privileges = true,
+
+    # Drop all capabilities
+    drop_all_capabilities = true,
+
+    # Allowed capabilities (minimal)
+    allowed_capabilities = [
+      "NET_BIND_SERVICE",
+    ],
+
+    # Seccomp profile
+    seccomp_profile = "strict",
+
+    # AppArmor profile
+    apparmor_profile = "svalinn-vault",
+
+    # SELinux type
+    selinux_type = "svalinn_t",
+
+    # Syscall filtering
+    blocked_syscalls = [
+      "ptrace",
+      "kexec_load",
+      "mount",
+      "umount",
+      "pivot_root",
+      "swapon",
+      "swapoff",
+      "reboot",
+      "init_module",
+      "delete_module",
+    ],
+  },
+
+  # DNS security
+  dns_security = {
+    # DNSSEC validation
+    dnssec_validation = true,
+
+    # DNS over HTTPS
+    doh_enabled = true,
+    doh_servers = [
+      "https://dns.quad9.net/dns-query",
+      "https://cloudflare-dns.com/dns-query",
+    ],
+
+    # Block DNS leaks
+    block_dns_leaks = true,
+
+    # DNS fluctuation (hyperpolymath/dns-fluctuator)
+    fluctuation = {
+      enabled = true,
+      hinfo_rotation = true,
+      loc_randomization = true,
+    },
+  },
+
+  # TLS configuration
+  tls = {
+    min_version = "TLS1.3",
+    cipher_suites = [
+      "TLS_AES_256_GCM_SHA384",
+      "TLS_CHACHA20_POLY1305_SHA256",
+    ],
+    # Post-quantum hybrid (when available)
+    pq_hybrid = true,
+  },
+
+  # Headers and content security
+  security_headers = {
+    strict_transport_security = "max-age=31536000; includeSubDomains; preload",
+    content_security_policy = "default-src 'none'; frame-ancestors 'none'",
+    x_content_type_options = "nosniff",
+    x_frame_options = "DENY",
+    x_xss_protection = "1; mode=block",
+    referrer_policy = "no-referrer",
+    permissions_policy = "geolocation=(), microphone=(), camera=()",
+
+    # Block mixed content
+    block_all_mixed_content = true,
+  },
+
+  # Integrity verification
+  integrity = {
+    # Verify on every read
+    verify_on_read = true,
+
+    # Verify on every write
+    verify_on_write = true,
+
+    # Hash algorithm
+    hash_algorithm = "BLAKE3",
+
+    # Signature verification
+    verify_signatures = true,
+    signature_algorithm = "Dilithium5",
+  },
+} in
+
+{
+  version = "1.0.0",
+  profile = "maximum_security",
+  hardening = MaxHardening,
+
+  # User can choose license
+  licensing = {
+    available_licenses = ["AGPL-3.0-or-later", "MIT"],
+    default = "AGPL-3.0-or-later",
+    overlay = "Palimpsest",
+  },
+}
