@@ -1,66 +1,48 @@
 ---
 name: Documentation
-about: Report unclear, missing, or incorrect documentation
-title: "[DOCS]: "
-labels: 'documentation, priority: unset, triage'
+about: Report documentation issues or suggest improvements
+title: '[DOCS] '
+labels: 'documentation, triage'
 assignees: ''
-
 ---
 
-name: Documentation
-description: Report unclear, missing, or incorrect documentation
-title: "[Docs]: "
-labels: ["documentation", "triage"]
-body:
-  - type: markdown
-    attributes:
-      value: |
-        Help us improve our documentation by reporting issues or gaps.
+## Pre-Submission Checklist
 
-  - type: dropdown
-    id: type
-    attributes:
-      label: Documentation issue type
-      options:
-        - Missing (documentation doesn't exist)
-        - Incorrect (information is wrong)
-        - Unclear (confusing or hard to follow)
-        - Outdated (no longer accurate)
-        - Typo or grammar
-    validations:
-      required: true
+- [ ] I have checked this isn't already reported
+- [ ] I have verified I'm reading the latest documentation
 
-  - type: input
-    id: location
-    attributes:
-      label: Location
-      description: Where is this documentation? (URL, file path, or section name)
-      placeholder: README.adoc, section "Installation"
-    validations:
-      required: true
+## Documentation Location
 
-  - type: textarea
-    id: description
-    attributes:
-      label: Description
-      description: What's the problem with the current documentation?
-      placeholder: Describe what's wrong or missing
-    validations:
-      required: true
+Which document has the issue?
 
-  - type: textarea
-    id: suggestion
-    attributes:
-      label: Suggested improvement
-      description: How should it be fixed or improved?
-      placeholder: The documentation should say...
-    validations:
-      required: false
+- [ ] README.adoc
+- [ ] CONTRIBUTING.adoc
+- [ ] SECURITY.md
+- [ ] Code documentation / comments
+- [ ] Other: _______________
 
-  - type: checkboxes
-    id: contribution
-    attributes:
-      label: Contribution
-      options:
-        - label: I would be willing to submit a PR to fix this
-          required: false
+## Issue Type
+
+- [ ] Missing information
+- [ ] Incorrect information
+- [ ] Unclear explanation
+- [ ] Outdated content
+- [ ] Broken links
+- [ ] Typo/grammar
+
+## Description
+
+Describe the issue with the current documentation.
+
+## Suggested Fix
+
+What should the documentation say instead? (if applicable)
+
+## Would You Submit a PR?
+
+- [ ] Yes, I can submit a PR to fix this
+- [ ] No, but I can help review a fix
+
+## Additional Context
+
+Any other relevant information.

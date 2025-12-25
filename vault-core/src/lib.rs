@@ -26,6 +26,8 @@ pub mod polymorphic;
 pub mod qrng;
 pub mod versioning;
 pub mod auth_protection;
+pub mod password_policy;
+pub mod lockdown;
 pub mod error;
 
 pub use crypto::*;
@@ -39,6 +41,8 @@ pub use polymorphic::*;
 pub use qrng::*;
 pub use versioning::*;
 pub use auth_protection::*;
+pub use password_policy::*;
+pub use lockdown::*;
 pub use error::*;
 
 /// Vault version for compatibility checking

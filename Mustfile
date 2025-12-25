@@ -1,0 +1,196 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-FileCopyrightText: 2025 Hyperpolymath
+#
+# Mustfile - Declarative Requirements for Svalinn Vault
+# This file defines MANDATORY requirements that MUST be satisfied.
+# Enforced by hyperpolymath/mustfile validator.
+
+[metadata]
+name = "svalinn-vault"
+version = "0.1.0"
+mustfile_version = "1.0"
+
+# =============================================================================
+# SECURITY REQUIREMENTS - These MUST be satisfied before any operation
+# =============================================================================
+
+[must.security]
+# Cryptographic requirements
+argon2id_memory_min_kib = 65536          # 64 MiB minimum
+argon2id_iterations_min = 4
+aes_key_bits = 256                        # AES-256 only
+blake3_output_bytes = 32
+shake3_output_bytes = 32
+ed448_required = true
+kyber_level = 1024                        # Kyber-1024 (highest)
+dilithium_level = 5                       # Dilithium5 (highest)
+miller_rabin_rounds_min = 64
+
+# No weak algorithms
+banned_algorithms = [
+    "md5", "sha1", "des", "3des", "rc4", "rc2",
+    "blowfish", "idea", "rsa-1024", "dsa-1024"
+]
+
+# TLS requirements
+tls_min_version = "1.3"
+require_perfect_forward_secrecy = true
+require_aead_ciphers = true
+
+[must.access_control]
+# MFA required for all vault operations
+mfa_required = true
+mfa_type = "totp"
+
+# Time-lock requirements
+timelock_timezone = "UTC"
+timelock_precision_seconds = 1
+
+# Password policy
+password_min_length = 16
+password_require_uppercase = true
+password_require_lowercase = true
+password_require_digits = true
+password_require_symbols = true
+password_history_count = 24
+password_max_age_days = 90
+
+# Session requirements
+session_max_duration_hours = 8
+session_idle_timeout_minutes = 15
+require_re_auth_for_export = true
+
+[must.network]
+# IPv6 only
+ipv6_only = true
+ipv4_blocked = true
+
+# No clear-text protocols
+require_encryption = true
+banned_protocols = ["http", "ftp", "telnet", "rsh", "rlogin"]
+
+# VPN required
+vpn_required = true
+vpn_provider = "airvpn"
+
+[must.container]
+# SELinux enforcing
+selinux_mode = "enforcing"
+selinux_policy = "svalinn"
+
+# Minimal capabilities
+drop_all_capabilities = true
+no_new_privileges = true
+
+# Read-only root filesystem
+readonly_root = true
+
+# No privileged containers
+privileged = false
+
+[must.storage]
+# Encryption at rest
+encrypt_at_rest = true
+encryption_algorithm = "aes-256-gcm"
+
+# No plaintext secrets
+no_plaintext_secrets = true
+
+# Secure deletion
+secure_delete = true
+overwrite_passes = 3
+
+[must.audit]
+# All operations logged
+log_all_operations = true
+log_authentication = true
+log_authorization = true
+log_data_access = true
+
+# Tamper-evident logs
+signed_logs = true
+hash_chain_logs = true
+
+# =============================================================================
+# FILE PERMISSIONS - Locked state
+# =============================================================================
+
+[must.permissions.locked]
+# When vault is locked, maximum restriction
+vault_files = "000"           # No access at all
+config_files = "400"          # Read-only by owner
+log_files = "200"             # Append-only
+socket_files = "000"          # No socket access when locked
+
+[must.permissions.unlocked]
+# When vault is unlocked, minimal access
+vault_files = "600"           # Owner read/write only
+config_files = "400"          # Read-only
+log_files = "200"             # Append-only
+socket_files = "600"          # Socket access for API
+
+[must.permissions.chroot]
+# Chroot restrictions
+jail_path = "/var/lib/svalinn/jail"
+jail_mode = "500"             # Execute only
+no_setuid = true
+no_devices = true
+no_exec_on_tmp = true
+
+# =============================================================================
+# DEPENDENCIES - Version pinning with hashes
+# =============================================================================
+
+[must.dependencies]
+# All dependencies must be hash-pinned
+require_hash_pins = true
+hash_algorithm = "sha256"
+
+# No yanked versions
+no_yanked = true
+
+# Security advisory check
+check_advisories = true
+fail_on_advisory = true
+
+# License restrictions
+allowed_licenses = [
+    "MIT", "Apache-2.0", "BSD-2-Clause", "BSD-3-Clause",
+    "ISC", "AGPL-3.0-or-later", "MPL-2.0"
+]
+
+banned_licenses = [
+    "GPL-2.0", "LGPL-2.0", "AGPL-1.0", "proprietary"
+]
+
+# =============================================================================
+# CI/CD REQUIREMENTS
+# =============================================================================
+
+[must.cicd]
+# All commits must be signed
+require_signed_commits = true
+require_verified_signatures = true
+
+# Branch protection
+protected_branches = ["main", "release/*"]
+require_reviews = true
+min_reviewers = 2
+dismiss_stale_reviews = true
+
+# No force push
+no_force_push = true
+no_delete_branches = true
+
+# Required checks
+required_checks = [
+    "codeql",
+    "dependency-review",
+    "secret-scanning",
+    "cargo-audit",
+    "cargo-deny",
+    "trivy-scan"
+]
+
+# No bypass
+no_admin_bypass = true

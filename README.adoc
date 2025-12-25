@@ -1,66 +1,259 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // SPDX-FileCopyrightText: 2025 Jonathan D.A. Jewell
-= vex-SATELLITE_NAME
+= Svalinn Vault
 :toc: preamble
-:toclevels: 2
+:toclevels: 3
+:icons: font
+:source-highlighter: rouge
 
-TAGLINE
+Secure identity storage with post-quantum cryptography for SSH keys, PGP keys, PATs, and API credentials.
+
+[IMPORTANT]
+====
+*HOSTILE ENVIRONMENT ASSUMED AT ALL TIMES*
+
+This vault treats all external systems as potentially compromised.
+====
 
 == Overview
 
-DESCRIPTION
+Svalinn Vault provides military-grade protection for digital identities using:
 
-=== Vexometer Integration
+* *Post-Quantum Cryptography*: Kyber-1024 key encapsulation, Dilithium5 signatures
+* *Classical Cryptography*: AES-256-GCM, BLAKE3, SHAKE3-256, Ed448
+* *Memory-Hard KDF*: Argon2id with 64 MiB minimum memory
+* *Time-Locking*: UTC-based access windows with schedule enforcement
+* *MFA*: TOTP with anti-AI CAPTCHA challenges
+* *Code Obfuscation*: Quantum-seeded polymorphic/metamorphic transformation on lock
 
-This satellite targets the following vexometer metrics:
+=== Supported Identity Types
 
-* TARGET_METRICS
+[cols="1,2"]
+|===
+|Type |Description
 
-Integration with vexometer is *optional*. This tool works standalone.
+|`ssh` |SSH key pairs (Ed25519, ECDSA, RSA)
+|`pgp` |PGP/GPG keys
+|`pat` |Personal Access Tokens
+|`rest-api` |REST API credentials
+|`graphql-api` |GraphQL API credentials
+|`grpc-api` |gRPC API credentials
+|`xpc` |XPC service credentials (Darwin)
+|`x509` |X.509 certificates
+|`did` |Decentralized Identifiers
+|`oauth2` |OAuth2 tokens
+|`jwt` |JWT tokens
+|`wireguard` |WireGuard private keys
+|===
+
+== Security Architecture
+
+[source]
+----
+┌─────────────────────────────────────────────────────────────────┐
+│                     SVALINN VAULT                                │
+├─────────────────────────────────────────────────────────────────┤
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────────┐  │
+│  │   Ada CLI   │  │  ReScript   │  │    Guile Scheme         │  │
+│  │     /TUI    │  │  Interface  │  │   (USERMEMORY.scm)      │  │
+│  └──────┬──────┘  └──────┬──────┘  └───────────┬─────────────┘  │
+│         │                │                      │                │
+│         └────────────────┼──────────────────────┘                │
+│                          ▼                                       │
+│  ┌───────────────────────────────────────────────────────────┐  │
+│  │                    RUST VAULT CORE                         │  │
+│  │  ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────────────┐  │  │
+│  │  │Argon2id │ │Kyber1024│ │Dilithium│ │ Polymorphic     │  │  │
+│  │  │   KDF   │ │   KEM   │ │   Sig   │ │ Obfuscation     │  │  │
+│  │  └─────────┘ └─────────┘ └─────────┘ └─────────────────┘  │  │
+│  │  ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────────────┐  │  │
+│  │  │AES-256  │ │ BLAKE3  │ │SHAKE3   │ │ QRNG + Decoys   │  │  │
+│  │  │  GCM    │ │  Hash   │ │  XOF    │ │                 │  │  │
+│  │  └─────────┘ └─────────┘ └─────────┘ └─────────────────┘  │  │
+│  └───────────────────────────────────────────────────────────┘  │
+│                          │                                       │
+│         ┌────────────────┼────────────────┐                     │
+│         ▼                ▼                ▼                     │
+│  ┌───────────┐    ┌───────────┐    ┌───────────┐               │
+│  │   CUBS    │    │   XTDB    │    │ Dragonfly │               │
+│  │ Database  │◄───│  Search   │    │   Cache   │               │
+│  └───────────┘    └───────────┘    └───────────┘               │
+└─────────────────────────────────────────────────────────────────┘
+                          │
+                          ▼
+            ┌─────────────────────────┐
+            │   IPv6 Only + AirVPN   │
+            │   (WireGuard SDP)       │
+            └─────────────────────────┘
+----
 
 == Installation
 
+=== Using Nix (Recommended)
+
 [source,bash]
 ----
-# Using Alire (Ada)
-alr get vex-SATELLITE_NAME
+# Install from flake
+nix profile install github:hyperpolymath/reasonable-good-token-vault
 
-# Using Cargo (Rust)
-cargo install vex-SATELLITE_NAME
+# Or enter development shell
+nix develop github:hyperpolymath/reasonable-good-token-vault
+----
 
-# Using Nix
-nix profile install github:hyperpolymath/vex-SATELLITE_NAME
+=== Using Guix
+
+[source,bash]
+----
+guix install -f guix.scm
+----
+
+=== Using Cargo (Rust Core Only)
+
+[source,bash]
+----
+cd vault-core
+cargo install --path .
+----
+
+=== Container Deployment
+
+[source,bash]
+----
+# Build container
+podman build -f container/svalinn.containerfile -t svalinn-vault .
+
+# Run with security restrictions
+podman run --rm -it \
+  --security-opt label=type:svalinn_t \
+  --cap-drop=ALL \
+  --cap-add=NET_BIND_SERVICE \
+  --read-only \
+  -v svalinn-data:/vault/data:Z \
+  -v svalinn-keys:/vault/keys:Z \
+  svalinn-vault
 ----
 
 == Usage
 
+=== Initialize Vault
+
 [source,bash]
 ----
-# Basic usage
-vex-SATELLITE_NAME analyse input.txt
+# Create new vault with strong password
+svalinn-cli init
 
-# With vexometer trace output
-vex-SATELLITE_NAME --trace before.json after.json
+# Password requirements:
+# - Minimum 16 characters
+# - Mixed case, numbers, symbols
+# - Not in breach databases
+# - No repeats of previous passwords
+# - Rotation required every 90 days
 ----
+
+=== Manage Identities
+
+[source,bash]
+----
+# Add SSH key
+svalinn-cli add ssh --name "github-key" --path ~/.ssh/id_ed25519
+
+# Add PAT
+svalinn-cli add pat --name "github-token" --host github.com
+
+# List all identities
+svalinn-cli list
+
+# Get identity with MFA
+svalinn-cli get <id>
+
+# Export armored backup
+svalinn-cli export backup.armor
+----
+
+=== Interactive TUI
+
+[source,bash]
+----
+svalinn-cli tui
+----
+
+== Password Policy
+
+[cols="1,2"]
+|===
+|Requirement |Value
+
+|Minimum length |16 characters
+|Character classes |Uppercase, lowercase, digits, symbols (all required)
+|Breach check |Password checked against HaveIBeenPwned
+|History |No repeat of last 24 passwords
+|Rotation |Required every 90 days
+|Lockout |5 failures = 1 hour lockout, then progressive
+|===
+
+== Code Obfuscation on Lock
+
+When the vault is locked, all in-memory data undergoes quantum-seeded polymorphic transformation:
+
+1. *Quantum Seed*: Fresh entropy from ANU QRNG or local hardware RNG
+2. *Polymorphic Transform*: XOR, byte shuffle, bit rotation, chunk interleave
+3. *Metamorphic Evolution*: Transform structure changes each lock cycle
+4. *Decoy Data*: Fake fragments mixed with real data
+
+This makes memory forensics extremely difficult.
+
+== Network Security
+
+[cols="1,2"]
+|===
+|Feature |Implementation
+
+|Protocol |IPv6 only, IPv4 completely blocked
+|VPN |AirVPN via WireGuard
+|Firewall |firewalld with DROP default
+|Honeypots |IPv4 ports 22, 80, 443, 3306, 5432, 6379, 27017
+|DNS |DNSSEC + DoH + dns-fluctuator
+|===
 
 == Building
 
 [source,bash]
 ----
-# Build
+# Build all
 just build
 
-# Test
+# Run tests
 just test
 
-# Check (lint + type check)
-just check
+# Security audit
+just audit
+
+# Formal verification
+just verify
 ----
 
 == License
 
-AGPL-3.0-or-later. See link:LICENSE.txt[LICENSE.txt].
+This project is dual-licensed:
+
+* *AGPL-3.0-or-later* - Default, ensures derivative works remain open
+* *MIT* - Available upon request for specific use cases
+
+The *Palimpsest License* overlay is encouraged. See link:LICENSES/PALIMPSEST.md[LICENSES/PALIMPSEST.md].
 
 == Contributing
 
 See link:CONTRIBUTING.adoc[CONTRIBUTING.adoc].
+
+All contributions require:
+
+* Signed commits (GPG or SSH)
+* Passing all security checks
+* Code review by maintainers
+* Formal verification where applicable
+
+== Security
+
+See link:.github/SECURITY.md[SECURITY.md] for vulnerability reporting.
+
+*DO NOT* open public issues for security vulnerabilities.

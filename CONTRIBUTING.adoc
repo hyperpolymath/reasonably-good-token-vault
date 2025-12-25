@@ -1,0 +1,158 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-FileCopyrightText: 2025 Jonathan D.A. Jewell
+= Contributing to Svalinn Vault
+:toc:
+:toclevels: 2
+
+Thank you for your interest in contributing to Svalinn Vault. This document outlines our strict requirements for all contributions.
+
+== Code of Conduct
+
+All contributors must adhere to respectful, professional conduct. Harassment, discrimination, or hostile behavior will not be tolerated.
+
+== Security-First Approach
+
+[IMPORTANT]
+====
+Every contribution is evaluated primarily on its security implications. Features that increase attack surface will be rejected regardless of utility.
+====
+
+=== Minimum Principle
+
+This project follows the *minimum principle*:
+
+* Only implement what is absolutely necessary
+* Remove any code that could be misused
+* Prefer simplicity over configurability
+* Default to secure, require explicit opt-out
+
+== Requirements
+
+=== Signed Commits
+
+All commits *MUST* be cryptographically signed:
+
+[source,bash]
+----
+# Configure GPG signing
+git config --global commit.gpgsign true
+git config --global user.signingkey YOUR_KEY_ID
+
+# Or SSH signing
+git config --global gpg.format ssh
+git config --global user.signingkey ~/.ssh/id_ed25519.pub
+----
+
+=== Language Policy
+
+Per the Hyperpolymath Standard (see `.claude/CLAUDE.md`):
+
+[cols="1,2"]
+|===
+|Allowed |Use Case
+
+|Rust |Performance-critical, cryptography, systems
+|ReScript |Application logic, type-safe interfaces
+|Ada |CLI/TUI, safety-critical components
+|Idris2 |Formal verification, dependent types
+|Gleam |Backend services (if needed)
+|Guile Scheme |Configuration, state files
+|Nickel |Complex configuration
+|Bash |Minimal scripts only
+|===
+
+*BANNED*: TypeScript, Node.js, npm, Go, Python (except SaltStack), Java, Kotlin, Swift
+
+=== Code Style
+
+==== Rust
+
+[source,bash]
+----
+# Format
+cargo fmt
+
+# Lint
+cargo clippy -- -D warnings
+
+# Audit
+cargo audit
+cargo deny check
+----
+
+==== Ada
+
+* Follow GNAT style guidelines
+* Enable all warnings (`-gnatwa -gnatwe`)
+* Enable all validity checks (`-gnatVa`)
+
+=== Testing
+
+* Unit tests required for all new functionality
+* Integration tests for cross-module changes
+* Security tests for any auth/crypto changes
+* Formal verification for critical algorithms
+
+=== Documentation
+
+* All public APIs must be documented
+* Security considerations must be noted
+* No secrets or credentials in examples
+
+== Pull Request Process
+
+1. *Fork and Branch*
++
+[source,bash]
+----
+git checkout -b feature/your-feature
+----
+
+2. *Make Changes*
+   - Follow all style guidelines
+   - Add tests
+   - Update documentation
+
+3. *Sign and Push*
++
+[source,bash]
+----
+git commit -S -m "feat: description"
+git push origin feature/your-feature
+----
+
+4. *Create PR*
+   - Use the PR template
+   - Link related issues
+   - Wait for CI to pass
+
+5. *Review*
+   - Address all feedback
+   - Security team review for sensitive areas
+   - 2 approvals required for merge
+
+== What We Accept
+
+* Security improvements
+* Bug fixes
+* Performance optimizations (with benchmarks)
+* Documentation improvements
+* Test coverage improvements
+
+== What We Reject
+
+* Features that increase attack surface
+* Dependencies with poor security records
+* Code that bypasses security controls
+* Contributions without signed commits
+* PRs that don't pass CI
+
+== Reporting Vulnerabilities
+
+*DO NOT* open public issues for security vulnerabilities.
+
+See link:.github/SECURITY.md[SECURITY.md] for responsible disclosure.
+
+== License
+
+By contributing, you agree that your contributions will be licensed under the same license as the project (AGPL-3.0-or-later or MIT, at project maintainers' discretion).
