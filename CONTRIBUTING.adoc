@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // SPDX-FileCopyrightText: 2025 Jonathan D.A. Jewell
-= Contributing to Svalinn Vault
+= Contributing to RGT Vault
 :toc:
 :toclevels: 2
 
-Thank you for your interest in contributing to Svalinn Vault. This document outlines our strict requirements for all contributions.
+Thank you for your interest in contributing to RGT Vault (Reasonably Good Token Vault). This document outlines our strict requirements for all contributions.
+
+RGT Vault is built on the Svalinn container with corre-terro image.
 
 == Code of Conduct
 

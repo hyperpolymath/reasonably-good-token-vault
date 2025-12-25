@@ -1,10 +1,12 @@
 (* SPDX-License-Identifier: AGPL-3.0-or-later *)
 (* SPDX-FileCopyrightText: 2025 Hyperpolymath *)
 (*
- * Svalinn Vault - CLI Interface (Static Specification)
+ * RGT Vault - CLI Interface (Static Specification)
+ * (Reasonably Good Token Vault - a parody of Pretty Good Privacy)
  *
  * ATS-based command line interface with linear resource management.
  * Includes MFA, login time limits, security scanning, and chmod 000 on exit.
+ * Built on Svalinn container technology with corre-terro image.
  *)
 
 #define ATS_PACKNAME "svalinn.cli"

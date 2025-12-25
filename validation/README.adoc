@@ -1,15 +1,17 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // SPDX-FileCopyrightText: 2025 Jonathan D.A. Jewell
-= Svalinn Vault Formal Verification Suite
+= RGT Vault Formal Verification Suite
 :toc: preamble
 :icons: font
 
-Comprehensive formal verification of Svalinn Vault security properties.
+Comprehensive formal verification of RGT Vault (Reasonably Good Token Vault) security properties.
 
 == Overview
 
 This directory contains formal verification tools to mathematically prove
-that Svalinn Vault's security properties hold under all conditions.
+that RGT Vault's security properties hold under all conditions.
+
+RGT Vault is built on the Svalinn container with corre-terro image.
 
 == Verification Tools
 

@@ -1,12 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // SPDX-FileCopyrightText: 2025 Jonathan D.A. Jewell
-= Svalinn Vault Roadmap
+= RGT Vault Roadmap
 :toc: preamble
 :toclevels: 3
 :icons: font
 :sectnums:
 
-Development roadmap for Svalinn Vault with security-first prioritization.
+Development roadmap for RGT Vault (Reasonably Good Token Vault) with security-first prioritization.
+
+Built on the Svalinn container with corre-terro image.
 
 [WARNING]
 ====

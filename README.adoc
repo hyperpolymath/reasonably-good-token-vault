@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // SPDX-FileCopyrightText: 2025 Jonathan D.A. Jewell
-= Svalinn Vault
+= RGT Vault
 :toc: preamble
 :toclevels: 3
 :icons: font
 :source-highlighter: rouge
 :sectnums:
 :sectnumlevels: 3
-:description: Post-quantum secure identity vault for SSH keys, API tokens, PGP keys, and digital credentials. Open source, formally verified, with protection against future quantum computers.
-:keywords: password manager, identity vault, SSH key storage, PGP key manager, API token security, post-quantum cryptography, Kyber, Dilithium, secure credential storage, open source security
+:description: RGT Vault (Reasonably Good Token Vault) - Post-quantum secure identity vault for SSH keys, API tokens, PGP keys, and digital credentials. A parody of Pretty Good Privacy. Open source, formally verified.
+:keywords: RGT Vault, Reasonably Good Token Vault, password manager, identity vault, SSH key storage, PGP key manager, API token security, post-quantum cryptography, Kyber, Dilithium, secure credential storage, open source security, PGP parody
 
 ifdef::env-github[]
 :tip-caption: :bulb:
@@ -18,16 +18,16 @@ ifdef::env-github[]
 :warning-caption: :warning:
 endif::[]
 
-*Keep Your Digital Identity Safe — Even From Future Threats*
+*Reasonably Good Token Vault — A Parody of Pretty Good Privacy*
 
 image:https://img.shields.io/badge/Post--Quantum-Secure-blue[Post-Quantum Secure]
 image:https://img.shields.io/badge/Formally-Verified-green[Formally Verified]
 image:https://img.shields.io/badge/License-AGPL--3.0-orange[License: AGPL-3.0]
 image:https://img.shields.io/badge/Status-Alpha-yellow[Status: Alpha]
 
-== What Is Svalinn Vault?
+== What Is RGT Vault?
 
-Svalinn Vault stores your digital identities securely. It goes beyond typical password managers to protect your most sensitive credentials.
+RGT Vault (Reasonably Good Token Vault) stores your digital identities securely. Named as a parody of Pretty Good Privacy (PGP), it goes beyond typical password managers to protect your most sensitive credentials. Built on the Svalinn container with the corre-terro image.
 
 === What You Can Store
 
@@ -40,9 +40,9 @@ Svalinn Vault stores your digital identities securely. It goes beyond typical pa
 * *Decentralised Identifiers (DIDs)* — Web3 identity
 * *WireGuard keys* — VPN connections
 
-=== Why Choose Svalinn Vault?
+=== Why Choose RGT Vault?
 
-Most password managers store passwords. Svalinn Vault stores cryptographic keys and tokens that control access to your entire digital life.
+Most password managers store passwords. RGT Vault stores cryptographic keys and tokens that control access to your entire digital life.
 
 [cols="1,1"]
 |===
@@ -73,8 +73,8 @@ nix profile install github:hyperpolymath/reasonable-good-token-vault
 # Using Guix
 guix install -f guix.scm
 
-# Container deployment
-podman pull ghcr.io/hyperpolymath/svalinn-vault:latest
+# Container deployment (uses Svalinn with corre-terro image)
+podman pull ghcr.io/hyperpolymath/rgt-vault:latest
 ----
 
 === First Steps
@@ -82,19 +82,19 @@ podman pull ghcr.io/hyperpolymath/svalinn-vault:latest
 [source,bash]
 ----
 # Create your vault
-svalinn-cli init
+rgt-vault init
 
 # Add an SSH key
-svalinn-cli add ssh --name "my-server-key" --path ~/.ssh/id_ed25519
+rgt-vault add ssh --name "my-server-key" --path ~/.ssh/id_ed25519
 
 # Add a GitHub token
-svalinn-cli add pat --name "github-token" --host github.com
+rgt-vault add pat --name "github-token" --host github.com
 
 # List your credentials (shows GUIDs only)
-svalinn-cli list
+rgt-vault list
 
 # Retrieve a credential
-svalinn-cli get a7f2c3d4-e5b6-4a8c-9d0e-f1a2b3c4d5e6
+rgt-vault get a7f2c3d4-e5b6-4a8c-9d0e-f1a2b3c4d5e6
 ----
 
 == How It Works
@@ -261,7 +261,9 @@ The vault uses memory-safe languages throughout:
 
 No C code in security-critical paths. No memory corruption vulnerabilities.
 
-=== Container Architecture
+=== Container Architecture (Svalinn + corre-terro)
+
+RGT Vault runs inside a Svalinn container using the corre-terro image:
 
 [source]
 ----
@@ -271,7 +273,7 @@ No C code in security-critical paths. No memory corruption vulnerabilities.
 ├────────────────────────────────────────────────────────────────┤
 │                                                                 │
 │  ┌─────────────────────────────────────────────────────────┐   │
-│  │              DELIVERY CONTAINER (Assembly)               │   │
+│  │     SVALINN CONTAINER (corre-terro image) - Delivery     │   │
 │  │                                                          │   │
 │  │  • Assembles credentials from fragments                  │   │
 │  │  • Resolves GUIDs to actual names                        │   │
@@ -281,11 +283,11 @@ No C code in security-critical paths. No memory corruption vulnerabilities.
 │  └──────────────────────────┬──────────────────────────────┘   │
 │                             │ API Socket Only                   │
 │  ┌──────────────────────────┴──────────────────────────────┐   │
-│  │               DATA CONTAINER (Chroot Jail)               │   │
+│  │     SVALINN CONTAINER (corre-terro image) - Data         │   │
 │  │               chmod 000 when locked                      │   │
 │  │                                                          │   │
 │  │  ┌──────────────────────────────────────────────────┐   │   │
-│  │  │                VAULT CORE (ATS)                   │   │   │
+│  │  │              RGT VAULT CORE (ATS)                 │   │   │
 │  │  │  Kyber-1024 │ Dilithium5 │ AES-256 │ BLAKE3     │   │   │
 │  │  └──────────────────────────────────────────────────┘   │   │
 │  │                                                          │   │
@@ -328,7 +330,7 @@ No C code in security-critical paths. No memory corruption vulnerabilities.
 
 == Status
 
-Svalinn Vault is in *alpha* development. The core architecture is solid, but:
+RGT Vault is in *alpha* development. The core architecture is solid, but:
 
 * Not all credential types are implemented yet
 * TUI is in early development
@@ -378,6 +380,8 @@ The link:LICENSES/PALIMPSEST.md[Palimpsest License] overlay encourages thoughtfu
 
 ---
 
-*Svalinn* — From Norse mythology, the shield that protects the world from the sun's heat.
+*RGT Vault* — Reasonably Good Token Vault. A parody of Pretty Good Privacy, for tokens.
 
-_Your credentials deserve protection that lasts._
+*Built on Svalinn* — From Norse mythology, the shield that protects the world from the sun's heat.
+
+_Your credentials deserve protection that lasts. And a sense of humour._
