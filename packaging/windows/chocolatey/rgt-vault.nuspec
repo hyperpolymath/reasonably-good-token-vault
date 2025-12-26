@@ -3,16 +3,18 @@
 <!-- SPDX-FileCopyrightText: 2025 Hyperpolymath -->
 <package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
   <metadata>
-    <id>svalinn-vault</id>
-    <version>0.1.0</version>
-    <title>Svalinn Vault</title>
+    <id>rgt-vault</id>
+    <version>0.1.0-alpha</version>
+    <title>RGT Vault (Reasonably Good Token Vault)</title>
     <authors>Hyperpolymath</authors>
     <owners>Hyperpolymath</owners>
     <licenseUrl>https://www.gnu.org/licenses/agpl-3.0.html</licenseUrl>
     <projectUrl>https://github.com/hyperpolymath/reasonable-good-token-vault</projectUrl>
     <requireLicenseAcceptance>true</requireLicenseAcceptance>
     <description>
-Post-quantum secure identity vault with Kyber-1024 and Dilithium5.
+RGT Vault - Reasonably Good Token Vault (a parody of Pretty Good Privacy)
+
+Post-quantum secure identity vault built on Svalinn container technology.
 
 Features:
 - Post-quantum key encapsulation (Kyber-1024)
@@ -28,10 +30,10 @@ Features:
 WARNING: This is dual-use technology. Users are responsible for
 compliance with applicable export control regulations.
     </description>
-    <summary>Post-quantum secure identity vault</summary>
-    <releaseNotes>Initial release with post-quantum cryptography support.</releaseNotes>
+    <summary>Post-quantum secure identity vault - Reasonably Good Token Vault</summary>
+    <releaseNotes>Initial alpha release with post-quantum cryptography support.</releaseNotes>
     <copyright>2025 Hyperpolymath</copyright>
-    <tags>security cryptography post-quantum vault identity ssh pgp</tags>
+    <tags>security cryptography post-quantum vault identity ssh pgp rgt-vault</tags>
     <dependencies>
       <dependency id="zig" version="0.11.0" />
     </dependencies>

@@ -2,10 +2,10 @@
 # SPDX-FileCopyrightText: 2025 Hyperpolymath
 # Maintainer: Hyperpolymath <security@hyperpolymath.example>
 
-pkgname=svalinn-vault
-pkgver=0.1.0
+pkgname=rgt-vault
+pkgver=0.1.0_alpha
 pkgrel=1
-pkgdesc="Post-quantum secure identity vault with Kyber-1024 and Dilithium5"
+pkgdesc="RGT Vault - Reasonably Good Token Vault. Post-quantum secure identity vault."
 arch=('x86_64' 'aarch64')
 url="https://github.com/hyperpolymath/reasonable-good-token-vault"
 license=('AGPL-3.0-or-later')
@@ -16,7 +16,7 @@ optdepends=(
     'firewalld: Firewall configuration'
     'wireguard-tools: VPN support'
 )
-source=("git+https://github.com/hyperpolymath/reasonable-good-token-vault.git#tag=v${pkgver}")
+source=("git+https://github.com/hyperpolymath/reasonable-good-token-vault.git#tag=v0.1.0-alpha")
 sha256sums=('SKIP')
 
 build() {
@@ -38,9 +38,9 @@ check() {
 package() {
     cd "reasonable-good-token-vault"
 
-    install -Dm755 vault-core-ats/svalinn-vault-core "$pkgdir/usr/bin/svalinn-cli"
-    install -Dm644 vault-core-ats/zig-out/lib/libsvalinn_crypto.a "$pkgdir/usr/lib/libsvalinn_crypto.a"
-    install -Dm644 container/config/selinux/svalinn.te "$pkgdir/usr/share/selinux/packages/svalinn.te"
+    install -Dm755 vault-core-ats/rgt-vault "$pkgdir/usr/bin/rgt-vault"
+    install -Dm644 vault-core-ats/zig-out/lib/librgt_crypto.a "$pkgdir/usr/lib/librgt_crypto.a"
+    install -Dm644 container/config/selinux/svalinn.te "$pkgdir/usr/share/selinux/packages/rgt-vault.te"
     install -Dm644 README.adoc "$pkgdir/usr/share/doc/$pkgname/README.adoc"
     install -Dm644 LICENSES/AGPL-3.0-or-later.txt "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
 }

@@ -204,11 +204,11 @@ Contributors and users are responsible for ensuring compliance with applicable l
 |===
 |Feature |Description |Status
 
-|Ada CLI
-|Command-line interface
-|⚠️ Needs Implementation
+|ATS CLI
+|Command-line interface (rgt-vault)
+|🔶 Alpha (stubs)
 
-|Ada TUI
+|ATS TUI
 |Terminal user interface
 |⚠️ Needs Implementation
 

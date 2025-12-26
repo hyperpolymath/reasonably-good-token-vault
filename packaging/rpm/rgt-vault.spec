@@ -1,10 +1,10 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # SPDX-FileCopyrightText: 2025 Hyperpolymath
 
-Name:           svalinn-vault
+Name:           rgt-vault
 Version:        0.1.0
-Release:        1%{?dist}
-Summary:        Post-quantum secure identity vault
+Release:        0.1.alpha%{?dist}
+Summary:        RGT Vault - Reasonably Good Token Vault (post-quantum secure)
 
 License:        AGPL-3.0-or-later
 URL:            https://github.com/hyperpolymath/reasonable-good-token-vault
@@ -20,8 +20,11 @@ Recommends:     selinux-policy
 Recommends:     firewalld
 
 %description
-Svalinn Vault provides military-grade protection for digital identities
-using post-quantum cryptography including Kyber-1024 and Dilithium5.
+RGT Vault (Reasonably Good Token Vault) - a parody of Pretty Good Privacy.
+
+Built on Svalinn container technology with corre-terro image, providing
+military-grade protection for digital identities using post-quantum
+cryptography including Kyber-1024 and Dilithium5.
 
 Features:
 - Post-quantum key encapsulation (Kyber-1024)
@@ -46,9 +49,9 @@ zig build -Doptimize=ReleaseSafe
 %make_build
 
 %install
-install -Dm755 vault-core-ats/svalinn-vault-core %{buildroot}%{_bindir}/svalinn-cli
-install -Dm644 vault-core-ats/zig-out/lib/libsvalinn_crypto.a %{buildroot}%{_libdir}/libsvalinn_crypto.a
-install -Dm644 container/config/selinux/svalinn.te %{buildroot}%{_datadir}/selinux/packages/svalinn.te
+install -Dm755 vault-core-ats/rgt-vault %{buildroot}%{_bindir}/rgt-vault
+install -Dm644 vault-core-ats/zig-out/lib/librgt_crypto.a %{buildroot}%{_libdir}/librgt_crypto.a
+install -Dm644 container/config/selinux/svalinn.te %{buildroot}%{_datadir}/selinux/packages/rgt-vault.te
 
 %check
 cd vault-core-ats
@@ -57,13 +60,15 @@ zig build test
 %files
 %license LICENSES/AGPL-3.0-or-later.txt
 %doc README.adoc ROADMAP.adoc
-%{_bindir}/svalinn-cli
-%{_libdir}/libsvalinn_crypto.a
-%{_datadir}/selinux/packages/svalinn.te
+%{_bindir}/rgt-vault
+%{_libdir}/librgt_crypto.a
+%{_datadir}/selinux/packages/rgt-vault.te
 
 %changelog
-* Thu Dec 25 2025 Hyperpolymath <security@hyperpolymath.example> - 0.1.0-1
-- Initial release
+* Thu Dec 26 2025 Hyperpolymath <security@hyperpolymath.example> - 0.1.0-0.1.alpha
+- Initial alpha release
+- Renamed from Svalinn Vault to RGT Vault (Reasonably Good Token Vault)
 - Post-quantum cryptography: Kyber-1024, Dilithium5
 - GUID-based storage with redaction
 - chmod 000 lockdown
+- Built on Svalinn container with corre-terro image

@@ -11,9 +11,9 @@ override_dh_auto_build:
 	cd vault-core-ats && $(MAKE) build
 
 override_dh_auto_install:
-	install -Dm755 vault-core-ats/svalinn-vault-core $(DESTDIR)/usr/bin/svalinn-cli
-	install -Dm644 vault-core-ats/zig-out/lib/libsvalinn_crypto.a $(DESTDIR)/usr/lib/libsvalinn_crypto.a
-	install -Dm644 container/config/selinux/svalinn.te $(DESTDIR)/usr/share/selinux/packages/svalinn.te
+	install -Dm755 vault-core-ats/rgt-vault $(DESTDIR)/usr/bin/rgt-vault
+	install -Dm644 vault-core-ats/zig-out/lib/librgt_crypto.a $(DESTDIR)/usr/lib/librgt_crypto.a
+	install -Dm644 container/config/selinux/svalinn.te $(DESTDIR)/usr/share/selinux/packages/rgt-vault.te
 
 override_dh_auto_test:
 	cd vault-core-ats && zig build test

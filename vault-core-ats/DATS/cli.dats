@@ -246,7 +246,14 @@ implement execute_command (state, cmd) = let
       1
     end
     else let
-      (* TODO: Initialize vault with password *)
+      (* STUB: v0.1.0-alpha - vault initialization deferred to v1.0.0
+       * Full implementation will:
+       * - Derive master key via Argon2id (64 MiB)
+       * - Generate Kyber-1024 keypair
+       * - Initialize CUBS flat storage
+       * - Set up chroot jail
+       * - Apply chmod 000 lockdown
+       *)
       val () = key_destroy(pw1)
       val () = cli_print("Vault initialized successfully")
     in
@@ -260,7 +267,14 @@ implement execute_command (state, cmd) = let
     val pw = cli_read_password("Master password: ")
     val totp = cli_read_totp("TOTP code: ")
 
-    (* TODO: Attempt unlock *)
+    (* STUB: v0.1.0-alpha - unlock deferred to v1.0.0
+     * Full implementation will:
+     * - Verify password via Argon2id
+     * - Validate TOTP code
+     * - Decrypt master key with Kyber-1024
+     * - Restore file permissions
+     * - Run security diff scan
+     *)
     val () = key_destroy(pw)
     val () = cli_print("Vault unlocked")
   in
@@ -269,7 +283,14 @@ implement execute_command (state, cmd) = let
 
   fun cmd_lock (): int = let
     val () = cli_print("Locking vault...")
-    (* TODO: Lock vault with obfuscation *)
+    (* STUB: v0.1.0-alpha - lock deferred to v1.0.0
+     * Full implementation will:
+     * - Zero all decrypted material in memory
+     * - Apply polymorphic obfuscation with quantum seed
+     * - Set chmod 000 on all vault files
+     * - Close API sockets
+     * - Log lock event
+     *)
     val () = cli_print("Vault locked (chmod 000 applied)")
   in
     0

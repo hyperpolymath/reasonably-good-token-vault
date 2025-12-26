@@ -1,22 +1,23 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # SPDX-FileCopyrightText: 2025 Hyperpolymath
 #
-# Svalinn Vault rpm-ostree overlay configuration
+# RGT Vault rpm-ostree overlay configuration
+# (Reasonably Good Token Vault - built on Svalinn container)
 # For use with Fedora Silverblue, Kinoite, CoreOS, etc.
 
 # Install as layered package
-# rpm-ostree install svalinn-vault
+# rpm-ostree install rgt-vault
 
 # Or include in custom ostree compose:
-ref: svalinn/vault/${basearch}
+ref: rgt-vault/${basearch}
 
 rojig:
-  name: svalinn-vault
-  summary: "Post-quantum secure identity vault"
+  name: rgt-vault
+  summary: "RGT Vault - Reasonably Good Token Vault (post-quantum secure)"
   license: AGPL-3.0-or-later
 
 packages:
-  - svalinn-vault
+  - rgt-vault
 
 # Remove packages that conflict with security requirements
 packages-remove:
@@ -30,8 +31,8 @@ include:
 
 # Add SELinux policy
 add-files:
-  - - svalinn.te
-    - /usr/share/selinux/packages/svalinn.te
+  - - rgt-vault.te
+    - /usr/share/selinux/packages/rgt-vault.te
 
 # Post-installation commands
 postprocess:
@@ -40,26 +41,26 @@ postprocess:
     set -euo pipefail
 
     # Compile and install SELinux policy
-    if [ -f /usr/share/selinux/packages/svalinn.te ]; then
-      checkmodule -M -m -o /tmp/svalinn.mod /usr/share/selinux/packages/svalinn.te
-      semodule_package -o /tmp/svalinn.pp -m /tmp/svalinn.mod
-      semodule -i /tmp/svalinn.pp
-      rm -f /tmp/svalinn.mod /tmp/svalinn.pp
+    if [ -f /usr/share/selinux/packages/rgt-vault.te ]; then
+      checkmodule -M -m -o /tmp/rgt-vault.mod /usr/share/selinux/packages/rgt-vault.te
+      semodule_package -o /tmp/rgt-vault.pp -m /tmp/rgt-vault.mod
+      semodule -i /tmp/rgt-vault.pp
+      rm -f /tmp/rgt-vault.mod /tmp/rgt-vault.pp
     fi
 
     # Create vault directories
-    mkdir -p /var/lib/svalinn/vault
-    mkdir -p /var/lib/svalinn/jail
-    chmod 700 /var/lib/svalinn
-    chmod 000 /var/lib/svalinn/vault  # Locked by default
+    mkdir -p /var/lib/rgt-vault/vault
+    mkdir -p /var/lib/rgt-vault/jail
+    chmod 700 /var/lib/rgt-vault
+    chmod 000 /var/lib/rgt-vault/vault  # Locked by default
 
     # Set up firewalld zone
     if [ -d /etc/firewalld/zones ]; then
-      cat > /etc/firewalld/zones/svalinn.xml << 'EOF'
+      cat > /etc/firewalld/zones/rgt-vault.xml << 'EOF'
 <?xml version="1.0" encoding="utf-8"?>
 <zone target="DROP">
-  <short>Svalinn</short>
-  <description>Maximum security zone for Svalinn vault - IPv6 only</description>
+  <short>RGT-Vault</short>
+  <description>Maximum security zone for RGT Vault - IPv6 only</description>
   <service name="dhcpv6-client"/>
 </zone>
 EOF
@@ -67,16 +68,16 @@ EOF
 
 # Ensure immutability of critical files
 preserve-only:
-  - /usr/bin/svalinn-cli
-  - /usr/lib/libsvalinn_crypto.a
-  - /usr/share/selinux/packages/svalinn.te
+  - /usr/bin/rgt-vault
+  - /usr/lib/librgt_crypto.a
+  - /usr/share/selinux/packages/rgt-vault.te
 
 # Container configuration for rpm-ostree containers
 container:
   base: quay.io/fedora/fedora-coreos:stable
   labels:
-    io.opencontainers.image.title: "Svalinn Vault"
-    io.opencontainers.image.description: "Post-quantum secure identity vault"
+    io.opencontainers.image.title: "RGT Vault (Reasonably Good Token Vault)"
+    io.opencontainers.image.description: "Post-quantum secure identity vault - a parody of PGP"
     io.opencontainers.image.source: "https://github.com/hyperpolymath/reasonable-good-token-vault"
     io.opencontainers.image.licenses: "AGPL-3.0-or-later"
     io.opencontainers.image.documentation: "https://github.com/hyperpolymath/reasonable-good-token-vault#readme"
