@@ -1,13 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // SPDX-FileCopyrightText: 2025 Jonathan D.A. Jewell
-= RGT Vault Technical Stack
+= Svalinn Vault Technical Stack
 :toc: preamble
 :toclevels: 4
 :icons: font
 
-Complete technical stack documentation for RGT Vault (Reasonably Good Token Vault).
-
-Built on the Svalinn container with corre-terro image.
+Complete technical stack documentation for Svalinn Vault.
 
 == Programming Languages
 

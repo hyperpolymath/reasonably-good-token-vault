@@ -5,13 +5,11 @@
 :icons: font
 :sectnums:
 
-*RGT Vault — Reasonably Good Token Vault*
+*Your secrets deserve better protection than a password manager can offer.*
 
-_Your secrets deserve better protection than a password manager can offer._
+== What Svalinn Vault Protects
 
-== What RGT Vault Protects
-
-RGT Vault keeps your digital identities safe. Built on the Svalinn container with corre-terro image, it protects:
+Svalinn Vault keeps your digital identities safe. This includes:
 
 - *SSH keys* for secure server access
 - *PGP/GPG keys* for encrypted email and file signing
@@ -50,7 +48,7 @@ Your credentials pass through several protection layers:
 
 === Network Protection
 
-RGT Vault uses IPv6 connections only. All IPv4 traffic gets blocked. This removes most internet attack methods.
+Svalinn Vault uses IPv6 connections only. All IPv4 traffic gets blocked. This removes most internet attack methods.
 
 The vault connects through AirVPN using WireGuard encryption. Even your internet provider can't see what you're doing.
 
@@ -135,7 +133,7 @@ Here's the thing: we'd *love* to run a proper bug bounty programme. Security res
 
 We can't do that right now.
 
-Independent open-source developers don't have venture capital backing. We're not a Silicon Valley startup with millions in funding. We're building security software because people deserve better tools than what's currently available. The "Reasonably Good" in our name isn't false modesty — it's an acknowledgement that we're doing the best we can with the resources we have.
+Independent open-source developers don't have venture capital backing. We're not a Silicon Valley startup with millions in funding. We're building security software because people deserve better tools than what's currently available.
 
 === What We Can Offer
 
@@ -261,7 +259,7 @@ Formal certification is not currently pursued (costs money we don't have).
 
 == Hall of Fame
 
-Security researchers who have helped improve RGT Vault:
+Security researchers who have helped improve Svalinn Vault:
 
 |===
 |Researcher |Contribution |Date
@@ -277,4 +275,4 @@ Security researchers who have helped improve RGT Vault:
 - *General questions*: Open a GitHub Discussion
 - *Feature requests*: Open a GitHub Issue (non-security)
 
-_Thank you for helping keep RGT Vault secure. We're reasonably grateful._
+_Thank you for helping keep Svalinn Vault secure._

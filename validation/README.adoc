@@ -5,13 +5,16 @@
 :icons: font
 
 Comprehensive formal verification of RGT Vault (Reasonably Good Token Vault) security properties.
+= Svalinn Vault Formal Verification Suite
+:toc: preamble
+:icons: font
+
+Comprehensive formal verification of Svalinn Vault security properties.
 
 == Overview
 
 This directory contains formal verification tools to mathematically prove
-that RGT Vault's security properties hold under all conditions.
-
-RGT Vault is built on the Svalinn container with corre-terro image.
+that Svalinn Vault's security properties hold under all conditions.
 
 == Verification Tools
 

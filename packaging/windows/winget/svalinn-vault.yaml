@@ -1,0 +1,52 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-FileCopyrightText: 2025 Hyperpolymath
+
+PackageIdentifier: Hyperpolymath.SvalinnVault
+PackageVersion: 0.1.0
+PackageLocale: en-US
+Publisher: Hyperpolymath
+PublisherUrl: https://github.com/hyperpolymath
+PublisherSupportUrl: https://github.com/hyperpolymath/reasonable-good-token-vault/issues
+Author: Hyperpolymath
+PackageName: Svalinn Vault
+PackageUrl: https://github.com/hyperpolymath/reasonable-good-token-vault
+License: AGPL-3.0-or-later
+LicenseUrl: https://www.gnu.org/licenses/agpl-3.0.html
+Copyright: 2025 Hyperpolymath
+ShortDescription: Post-quantum secure identity vault
+Description: |
+  Svalinn Vault provides military-grade protection for digital identities
+  using post-quantum cryptography including Kyber-1024 and Dilithium5.
+
+  Features:
+  - Post-quantum key encapsulation (Kyber-1024)
+  - Post-quantum signatures (Dilithium5)
+  - Classical signatures (Ed448, Ed25519)
+  - AES-256-GCM authenticated encryption
+  - BLAKE3 hashing
+  - Argon2id key derivation (64 MiB memory)
+  - GUID-based storage with redaction
+  - chmod 000 lockdown when locked
+  - MFA with anti-AI CAPTCHA
+
+  WARNING: This is dual-use technology. Users are responsible for
+  compliance with applicable export control regulations.
+Moniker: svalinn
+Tags:
+  - security
+  - cryptography
+  - post-quantum
+  - vault
+  - identity
+  - ssh
+  - pgp
+ReleaseNotesUrl: https://github.com/hyperpolymath/reasonable-good-token-vault/releases/tag/v0.1.0
+Installers:
+  - Architecture: x64
+    InstallerType: zip
+    InstallerUrl: https://github.com/hyperpolymath/reasonable-good-token-vault/releases/download/v0.1.0/svalinn-vault-0.1.0-windows-x64.zip
+    InstallerSha256: PLACEHOLDER_SHA256
+    Commands:
+      - svalinn-cli
+ManifestType: singleton
+ManifestVersion: 1.4.0

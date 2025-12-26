@@ -1,4 +1,4 @@
-Source: rgt-vault
+Source: svalinn-vault
 Section: utils
 Priority: optional
 Maintainer: Hyperpolymath <security@hyperpolymath.example>
@@ -9,16 +9,14 @@ Vcs-Browser: https://github.com/hyperpolymath/reasonable-good-token-vault
 Vcs-Git: https://github.com/hyperpolymath/reasonable-good-token-vault.git
 Rules-Requires-Root: no
 
-Package: rgt-vault
+Package: svalinn-vault
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}, libssl3, libblake3-1
 Recommends: selinux-policy-default, firewalld
 Suggests: wireguard-tools
-Description: RGT Vault - Reasonably Good Token Vault (post-quantum secure)
- RGT Vault (Reasonably Good Token Vault) - a parody of Pretty Good Privacy.
- Built on Svalinn container technology with corre-terro image, providing
- military-grade protection for digital identities using post-quantum
- cryptography including Kyber-1024 and Dilithium5.
+Description: Post-quantum secure identity vault
+ Svalinn Vault provides military-grade protection for digital identities
+ using post-quantum cryptography including Kyber-1024 and Dilithium5.
  .
  Features:
   - Post-quantum key encapsulation (Kyber-1024)
