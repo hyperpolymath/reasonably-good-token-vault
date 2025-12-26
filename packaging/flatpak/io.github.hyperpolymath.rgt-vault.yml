@@ -1,0 +1,49 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-FileCopyrightText: 2025 Hyperpolymath
+#
+# RGT Vault Flatpak Manifest (Reasonably Good Token Vault)
+
+app-id: io.github.hyperpolymath.rgt-vault
+runtime: org.freedesktop.Platform
+runtime-version: '23.08'
+sdk: org.freedesktop.Sdk
+command: rgt-vault
+
+finish-args:
+  # No network access by default - security first
+  - --no-network
+  # File access for vault storage only
+  - --filesystem=~/.rgt-vault:create
+  # Socket for API
+  - --socket=session-bus
+  # No GPU, no audio, minimal attack surface
+  - --env=RGT_VAULT_DIR=~/.rgt-vault
+
+modules:
+  - name: zig
+    buildsystem: simple
+    build-commands:
+      - install -Dm755 zig /app/bin/zig
+      - cp -r lib /app/lib/zig
+    sources:
+      - type: archive
+        url: https://ziglang.org/download/0.11.0/zig-linux-x86_64-0.11.0.tar.xz
+        sha256: PLACEHOLDER_HASH
+
+  - name: ats2
+    buildsystem: autotools
+    sources:
+      - type: archive
+        url: https://sourceforge.net/projects/ats2-lang/files/ats2-lang/ats2-postiats-0.4.2/ATS2-Postiats-0.4.2.tgz
+        sha256: PLACEHOLDER_HASH
+
+  - name: rgt-vault
+    buildsystem: simple
+    build-commands:
+      - cd vault-core-ats && zig build -Doptimize=ReleaseSafe
+      - cd vault-core-ats && make build
+      - install -Dm755 vault-core-ats/rgt-vault /app/bin/rgt-vault
+    sources:
+      - type: git
+        url: https://github.com/hyperpolymath/reasonable-good-token-vault.git
+        tag: v0.1.0-alpha

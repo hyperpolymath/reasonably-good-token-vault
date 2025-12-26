@@ -1,0 +1,31 @@
+{
+    "version": "0.1.0-alpha",
+    "description": "RGT Vault - Reasonably Good Token Vault. Post-quantum secure identity vault.",
+    "homepage": "https://github.com/hyperpolymath/reasonable-good-token-vault",
+    "license": "AGPL-3.0-or-later",
+    "notes": [
+        "RGT Vault - A parody of Pretty Good Privacy, for tokens.",
+        "Built on Svalinn container technology.",
+        "WARNING: This is dual-use technology.",
+        "Users are responsible for compliance with applicable export control regulations.",
+        "See README.adoc for full documentation."
+    ],
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/hyperpolymath/reasonable-good-token-vault/releases/download/v0.1.0-alpha/rgt-vault-0.1.0-alpha-windows-x64.zip",
+            "hash": "PLACEHOLDER_SHA256"
+        }
+    },
+    "bin": "rgt-vault.exe",
+    "persist": ".rgt-vault",
+    "checkver": {
+        "github": "https://github.com/hyperpolymath/reasonable-good-token-vault"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/hyperpolymath/reasonable-good-token-vault/releases/download/v$version/rgt-vault-$version-windows-x64.zip"
+            }
+        }
+    }
+}

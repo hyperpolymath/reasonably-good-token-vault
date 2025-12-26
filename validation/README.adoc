@@ -1,5 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // SPDX-FileCopyrightText: 2025 Jonathan D.A. Jewell
+= RGT Vault Formal Verification Suite
+:toc: preamble
+:icons: font
+
+Comprehensive formal verification of RGT Vault (Reasonably Good Token Vault) security properties.
 = Svalinn Vault Formal Verification Suite
 :toc: preamble
 :icons: font
