@@ -1,7 +1,7 @@
 image:https://img.shields.io/badge/License-MPL_2.0-blue.svg[MPL-2.0,link="https://opensource.org/licenses/MPL-2.0"]
 image:https://img.shields.io/badge/Philosophy-Palimpsest-purple.svg[Palimpsest,link="https://github.com/hyperpolymath/palimpsest-licence"]
 
-// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-License-Identifier: PMPL-1.0-or-later
 // SPDX-FileCopyrightText: 2025 Jonathan D.A. Jewell
 = Reasonably Good Token Vault
 
@@ -373,7 +373,7 @@ _See link:SECURITY.adoc[SECURITY.adoc] for our honest take on the funding situat
 
 == License
 
-*AGPL-3.0-or-later*
+*PMPL-1.0-or-later*
 
 This ensures derivative works remain open source. Commercial licensing may be available — contact maintainers.
 
