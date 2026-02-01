@@ -76,13 +76,13 @@ This overlay license:
 To apply this overlay license:
 
 ```
-SPDX-License-Identifier: AGPL-3.0-or-later WITH Palimpsest-1.0
+SPDX-License-Identifier: MPL-2.0-or-later
 ```
 
 or
 
 ```
-SPDX-License-Identifier: MIT WITH Palimpsest-1.0
+SPDX-License-Identifier: MPL-2.0-or-later
 ```
 
 ### Compatibility
