@@ -15,6 +15,7 @@
 // - MFA: TOTP-based multi-factor authentication
 // - Strong primes: Miller-Rabin proven with distributed flat primes
 
+#![forbid(unsafe_code)]
 pub mod crypto;
 pub mod identity;
 pub mod mfa;
