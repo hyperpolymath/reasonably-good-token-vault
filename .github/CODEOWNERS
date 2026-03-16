@@ -1,0 +1,25 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-FileCopyrightText: 2025 Hyperpolymath
+#
+# CODEOWNERS - Require review for all changes
+
+# Default: require maintainer review for everything
+* @hyperpolymath
+
+# Security-critical files require additional security team review
+/vault-core/src/crypto.rs @hyperpolymath @security-team
+/vault-core/src/auth_protection.rs @hyperpolymath @security-team
+/vault-core/src/mfa.rs @hyperpolymath @security-team
+/vault-core/src/primes.rs @hyperpolymath @security-team
+/security/ @hyperpolymath @security-team
+/container/config/selinux/ @hyperpolymath @security-team
+/container/config/firewalld/ @hyperpolymath @security-team
+
+# Configuration files
+/.github/ @hyperpolymath
+/flake.nix @hyperpolymath
+/guix.scm @hyperpolymath
+
+# License files
+/LICENSES/ @hyperpolymath
+/LICENSE* @hyperpolymath
