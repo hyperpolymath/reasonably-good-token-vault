@@ -108,7 +108,7 @@ Replace every GitHub Secret with a GUID pointer to RGTV:
 
 ```
 # Old (dangerous — real token on GitHub's servers):
-ANTHROPIC_API_KEY = "sk-ant-abc123..."
+ANTHROPIC_API_KEY = "EXAMPLE-REAL-TOKEN-WOULD-BE-HERE"
 
 # New (safe — pointer to your vault, useless without your hardware):
 ANTHROPIC_API_KEY = "rgtv://vault.hyperpolymath.dev/a7f2c3d4-e5b6-4a8c"
