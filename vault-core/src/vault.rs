@@ -645,15 +645,18 @@ impl Vault {
 mod tests {
     use super::*;
 
+    #[cfg(test)]
+    const TEST_PASSWORD: &[u8] = b"test-password-secure-baseline-123";
+
     #[test]
     fn test_vault_create_and_unlock() {
-        let mut vault = Vault::create("test-vault", b"password123").unwrap();
+        let mut vault = Vault::create("test-vault", TEST_PASSWORD).unwrap();
 
         assert_eq!(vault.state, VaultState::Locked);
 
         // Unlock should work
         vault.config.require_mfa = false;
-        vault.unlock(b"password123").unwrap();
+        vault.unlock(TEST_PASSWORD).unwrap();
         assert_eq!(vault.state, VaultState::Unlocked);
 
         // Lock and verify
@@ -663,17 +666,17 @@ mod tests {
 
     #[test]
     fn test_vault_wrong_password() {
-        let mut vault = Vault::create("test-vault", b"password123").unwrap();
+        let mut vault = Vault::create("test-vault", TEST_PASSWORD).unwrap();
         vault.config.require_mfa = false;
 
-        assert!(vault.unlock(b"wrongpassword").is_err());
+        assert!(vault.unlock(b"wrongpassword-dynamic-999").is_err());
     }
 
     #[test]
     fn test_vault_identity_management() {
-        let mut vault = Vault::create("test-vault", b"password123").unwrap();
+        let mut vault = Vault::create("test-vault", TEST_PASSWORD).unwrap();
         vault.config.require_mfa = false;
-        vault.unlock(b"password123").unwrap();
+        vault.unlock(TEST_PASSWORD).unwrap();
 
         let identity = Identity::new(
             "test-ssh".to_string(),
