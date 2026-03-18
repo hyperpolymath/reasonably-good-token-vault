@@ -163,6 +163,7 @@ impl AesGcmCipher {
     /// Generate a random nonce
     pub fn generate_nonce() -> [u8; AES_NONCE_SIZE] {
         let mut nonce = [0u8; AES_NONCE_SIZE];
+        // Ensure the buffer is filled from a secure source before returning
         OsRng.fill_bytes(&mut nonce);
         nonce
     }
@@ -411,23 +412,28 @@ pub struct EncryptedPayload {
 mod tests {
     use super::*;
 
+    #[cfg(test)]
+    const TEST_PASSWORD: &[u8] = b"test-password-secure-baseline-123";
+    #[cfg(test)]
+    const TEST_DATA: &[u8] = b"test-data-for-cryptographic-operations-integrity-check";
+
     #[test]
     fn test_argon2_kdf() {
         let kdf = Argon2Kdf::default();
         let salt = Argon2Kdf::generate_salt();
-        let key = kdf.derive(b"password123", &salt).unwrap();
+        let key = kdf.derive(TEST_PASSWORD, &salt).unwrap();
         assert_eq!(key.len(), AES_KEY_SIZE);
     }
 
     #[test]
     fn test_blake3_hash() {
-        let hash = Blake3Hasher::hash(b"test data");
+        let hash = Blake3Hasher::hash(TEST_DATA);
         assert_eq!(hash.len(), BLAKE3_OUTPUT_SIZE);
     }
 
     #[test]
     fn test_shake3_256() {
-        let hash = Shake3_256::hash(b"test data");
+        let hash = Shake3_256::hash(TEST_DATA);
         assert_eq!(hash.len(), SHAKE3_OUTPUT_SIZE);
     }
 
@@ -436,7 +442,7 @@ mod tests {
         let key = SecureKey::new(AES_KEY_SIZE).unwrap();
         let cipher = AesGcmCipher::new(&key).unwrap();
         let nonce = AesGcmCipher::generate_nonce();
-        let plaintext = b"secret message";
+        let plaintext = b"secret-message-for-testing-purposes-only";
 
         let ciphertext = cipher.encrypt(&nonce, plaintext).unwrap();
         let decrypted = cipher.decrypt(&nonce, &ciphertext).unwrap();
@@ -455,7 +461,7 @@ mod tests {
     #[test]
     fn test_dilithium5_sign_verify() {
         let (pk, sk) = Dilithium5Signer::generate_keypair();
-        let message = b"test message";
+        let message = b"test-message-for-hybrid-signing-verification";
         let sig = Dilithium5Signer::sign(&sk, message).unwrap();
         assert!(Dilithium5Signer::verify(&pk, message, &sig).unwrap());
     }
@@ -463,8 +469,8 @@ mod tests {
     #[test]
     fn test_crypto_envelope_roundtrip() {
         let salt = Argon2Kdf::generate_salt();
-        let envelope = CryptoEnvelope::from_password(b"password123", &salt).unwrap();
-        let plaintext = b"secret data";
+        let envelope = CryptoEnvelope::from_password(TEST_PASSWORD, &salt).unwrap();
+        let plaintext = b"secret-data-for-envelope-testing";
 
         let encrypted = envelope.encrypt(plaintext).unwrap();
         let decrypted = envelope.decrypt(&encrypted).unwrap();
