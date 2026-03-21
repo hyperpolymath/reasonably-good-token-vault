@@ -1,0 +1,4 @@
+svalinn_main.adb:12:06: error: file "svalinn.ads" not found
+svalinn_main.adb:13:06: error: file "svalinn.ads" not found
+svalinn_main.adb:14:06: error: file "svalinn.ads" not found
+svalinn_main.adb:15:06: error: file "svalinn.ads" not found
