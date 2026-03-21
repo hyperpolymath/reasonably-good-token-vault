@@ -1,0 +1,21 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+[package]
+name = "svalinn-cli"
+version = "0.1.0"
+edition = "2021"
+license = "PMPL-1.0-or-later"
+description = "CLI for the Reasonably Good Token Vault (RGTV)"
+authors = ["Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>"]
+
+[[bin]]
+name = "svalinn_cli"
+path = "src/main.rs"
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+[profile.release]
+lto = true
+strip = true
+opt-level = "s"
