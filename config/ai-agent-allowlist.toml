@@ -1,0 +1,81 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+# Default command allowlist for AI agent credential access via vault/execute.
+#
+# When allowlist enforcement is enabled, only commands matching one of these
+# prefixes will be permitted to run with vault-injected credentials.
+#
+# Format: each entry is a command prefix. "git push" allows "git push origin main" etc.
+# Order doesn't matter. More specific prefixes take precedence only in documentation.
+#
+# To add entries at runtime: boj_vault_execute's allowlist_add endpoint.
+# To enable enforcement: boj_vault_execute's allowlist_enforce endpoint.
+
+[git]
+# Git operations (push, pull, fetch, clone with deploy keys)
+prefixes = [
+    "git push",
+    "git pull",
+    "git fetch",
+    "git clone",
+    "git remote",
+    "git ls-remote",
+]
+
+[github]
+# GitHub CLI operations (PRs, issues, API, releases)
+prefixes = [
+    "gh api",
+    "gh pr",
+    "gh issue",
+    "gh repo",
+    "gh release",
+    "gh run",
+    "gh workflow",
+    "gh auth status",
+    "gh search",
+]
+
+[gitlab]
+# GitLab CLI (mirroring, MR management)
+prefixes = [
+    "glab mr",
+    "glab issue",
+    "glab repo",
+    "glab api",
+]
+
+[cloudflare]
+# Cloudflare DNS and zone management
+prefixes = [
+    "curl -X GET https://api.cloudflare.com",
+    "curl -X PUT https://api.cloudflare.com",
+    "curl -X POST https://api.cloudflare.com",
+    "curl -X PATCH https://api.cloudflare.com",
+]
+
+[ssh]
+# SSH operations (deploy only, no interactive shells)
+prefixes = [
+    "ssh-keygen",
+    "ssh-add",
+]
+
+[container]
+# Container registry operations
+prefixes = [
+    "podman login",
+    "podman push",
+    "podman pull",
+    "skopeo copy",
+    "skopeo inspect",
+]
+
+# -----------------------------------------------------------------------
+# BLOCKED (never add these — even if asked)
+# -----------------------------------------------------------------------
+# rm -rf, dd, mkfs, fdisk, parted  — destructive
+# curl (arbitrary URLs)             — data exfil risk
+# ssh (interactive)                 — shell escape
+# eval, bash -c, sh -c             — injection vector
+# env, printenv, export             — credential leak
+# cat ~/.netrc, cat ~/.ssh/*        — direct credential read
