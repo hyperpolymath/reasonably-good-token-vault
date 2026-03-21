@@ -28,6 +28,7 @@ pub mod qrng;
 pub mod versioning;
 pub mod auth_protection;
 pub mod error;
+pub mod ffi;
 
 pub use crypto::*;
 pub use identity::*;

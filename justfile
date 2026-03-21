@@ -36,3 +36,7 @@ validate before after:
     @echo "Comparing vexometer scores..."
     @echo "Before: {{before}}"
     @echo "After: {{after}}"
+
+# Run panic-attacker pre-commit scan
+assail:
+    @command -v panic-attack >/dev/null 2>&1 && panic-attack assail . || echo "panic-attack not found — install from https://github.com/hyperpolymath/panic-attacker"
