@@ -64,11 +64,11 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
 
       - name: Dependency Review
-        uses: actions/dependency-review-action@v4
+        uses: actions/dependency-review-action@4901385134134e04cec5fbe5ddfe3b2c5bd5d976 # v4
         with:
           fail-on-severity: low
           deny-licenses: GPL-2.0, LGPL-2.0, AGPL-1.0
-          allow-licenses: MIT, Apache-2.0, BSD-2-Clause, BSD-3-Clause, ISC, AGPL-3.0-or-later
+          allow-licenses: MIT, Apache-2.0, BSD-2-Clause, BSD-3-Clause, ISC, PMPL-1.0-or-later
 
   # Secret Scanning
   secret-scanning:
@@ -89,7 +89,7 @@ jobs:
           extra_args: --only-verified
 
       - name: Gitleaks Secret Scan
-        uses: gitleaks/gitleaks-action@v2
+        uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7 # v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
@@ -128,7 +128,7 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
 
       - name: Generate SBOM
-        uses: anchore/sbom-action@v0
+        uses: anchore/sbom-action@d94f46e13c6c62f59525ac9a1e147a99dc0b9bf5 # v0
         with:
           format: cyclonedx-json
           output-file: sbom.json
@@ -152,7 +152,7 @@ jobs:
           docker build -f container/svalinn.containerfile -t svalinn-vault:scan .
 
       - name: Trivy Scan
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # master
         with:
           image-ref: 'svalinn-vault:scan'
           format: 'sarif'

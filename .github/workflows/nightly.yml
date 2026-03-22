@@ -82,14 +82,14 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
 
       - name: OSV Scanner
-        uses: google/osv-scanner-action@v1
+        uses: google/osv-scanner-action@daa2c68f50d845057895a9c300e42478481c1d26 # v1
         with:
           scan-args: |-
             --lockfile=vault-core-ats/build.zig.zon
             --recursive
 
       - name: Dependency Review
-        uses: actions/dependency-review-action@v4
+        uses: actions/dependency-review-action@4901385134134e04cec5fbe5ddfe3b2c5bd5d976 # v4
         with:
           fail-on-severity: low
 
