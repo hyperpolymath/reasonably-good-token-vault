@@ -69,6 +69,8 @@ x25519-dalek = "2.0"
 
 # TOTP for MFA
 totp-rs = { version = "5.4", features = ["gen_secret"] }
+# URL encoding for TOTP QR codes
+urlencoding = "2.0"
 
 # UUID for identity tracking
 uuid = { version = "1.6", features = ["v4", "serde"] }

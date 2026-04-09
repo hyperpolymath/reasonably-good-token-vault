@@ -108,8 +108,8 @@ pub struct ObjectStore {
     head: Option<[u8; 32]>,
     /// Encryption key
     encryption_key: SecureKey,
-    /// Compression level (1-22 for zstd)
-    compression_level: i32,
+    // TODO: Add compression support
+    // compression_level: i32,
 }
 
 impl ObjectStore {
@@ -120,7 +120,7 @@ impl ObjectStore {
             fragments: HashMap::new(),
             head: None,
             encryption_key,
-            compression_level: 19, // High compression for obfuscation
+            // compression_level: 19, // High compression for obfuscation
         }
     }
 

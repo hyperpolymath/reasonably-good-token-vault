@@ -10,7 +10,7 @@
 // - API credentials (GraphQL, REST, gRPC, XPC)
 // - Digital identities (certificates, DIDs)
 
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, Datelike, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use zeroize::{Zeroize, ZeroizeOnDrop};

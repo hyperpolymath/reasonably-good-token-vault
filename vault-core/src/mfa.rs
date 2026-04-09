@@ -13,7 +13,8 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use totp_rs::{Algorithm, Secret, TOTP};
-use zeroize::{Zeroize, ZeroizeOnDrop};
+use urlencoding;
+
 
 use crate::crypto::{Blake3Hasher, SecureKey};
 use crate::error::{VaultError, VaultResult};
@@ -75,10 +76,9 @@ impl From<TotpAlgorithm> for Algorithm {
 }
 
 /// Recovery code set
-#[derive(Clone, Zeroize, ZeroizeOnDrop, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct RecoveryCodes {
     /// Hashed recovery codes (only hashes stored)
-    #[zeroize(skip)]
     pub code_hashes: Vec<[u8; 32]>,
     /// Number of codes remaining
     pub remaining: usize,
@@ -207,17 +207,26 @@ impl MfaAuthenticator {
             .ok_or(VaultError::MfaRequired)?;
 
         let secret = Secret::Encoded(config.secret.clone());
-        let totp = TOTP::new(
+        let _totp = TOTP::new(
             config.algorithm.into(),
             config.digits,
             1,
             config.step,
             secret.to_bytes().map_err(|_| VaultError::MfaVerificationFailed)?,
-            Some(config.issuer.clone()),
-            config.account_name.clone(),
         ).map_err(|_| VaultError::MfaVerificationFailed)?;
 
-        Ok(totp.get_url())
+        // Generate QR code URL manually
+        let issuer = urlencoding::encode(&config.issuer);
+        let account_name = urlencoding::encode(&config.account_name);
+        let secret_encoded = &config.secret;
+        Ok(format!("otpauth://totp/{}:{}?secret={}&issuer={}&algorithm={}&digits={}&period={}", 
+                  issuer, account_name, secret_encoded, issuer, 
+                  match config.algorithm { 
+                      TotpAlgorithm::Sha1 => "SHA1", 
+                      TotpAlgorithm::Sha256 => "SHA256", 
+                      TotpAlgorithm::Sha512 => "SHA512", 
+                  }, 
+                  config.digits, config.step))
     }
 
     /// Generate recovery codes
@@ -257,8 +266,6 @@ impl MfaAuthenticator {
             1,
             config.step,
             secret.to_bytes().map_err(|_| VaultError::MfaVerificationFailed)?,
-            Some(config.issuer.clone()),
-            config.account_name.clone(),
         ).map_err(|_| VaultError::MfaVerificationFailed)?;
 
         if totp.check_current(code).map_err(|_| VaultError::MfaVerificationFailed)? {
@@ -331,8 +338,6 @@ impl MfaAuthenticator {
             1,
             config.step,
             secret.to_bytes().map_err(|_| VaultError::MfaVerificationFailed)?,
-            Some(config.issuer.clone()),
-            config.account_name.clone(),
         ).map_err(|_| VaultError::MfaVerificationFailed)?;
 
         totp.generate_current()

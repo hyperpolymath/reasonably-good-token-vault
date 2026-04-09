@@ -18,7 +18,7 @@ use uuid::Uuid;
 use crate::armor::ArmoredPayload;
 use crate::crypto::{
     AesGcmCipher, Argon2Kdf, Blake3Hasher, CryptoEnvelope, Dilithium5Signer,
-    EncryptedPayload, Kyber1024Kem, SecureKey, Shake3_256,
+    EncryptedPayload, SecureKey, Shake3_256,
 };
 use crate::error::{VaultError, VaultResult};
 use crate::identity::{Identity, IdentityRegistry, IdentityType};
@@ -26,9 +26,10 @@ use crate::mfa::{MfaAuthenticator, MfaMethod, MfaSession};
 use crate::timelock::{TimeLock, TimeLockState};
 
 /// Vault state
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub enum VaultState {
     /// Vault is locked, requires authentication
+    #[default]
     Locked,
     /// Vault is unlocked but MFA pending
     MfaPending,

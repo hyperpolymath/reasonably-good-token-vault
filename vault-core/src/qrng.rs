@@ -18,7 +18,7 @@ use rand_chacha::ChaCha20Rng;
 use serde::{Deserialize, Serialize};
 use std::collections::VecDeque;
 
-use crate::crypto::{Blake3Hasher, SecureKey};
+use crate::crypto::Blake3Hasher;
 use crate::error::{VaultError, VaultResult};
 
 /// QRNG source types

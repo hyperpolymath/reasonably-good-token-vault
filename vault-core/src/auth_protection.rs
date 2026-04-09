@@ -16,7 +16,7 @@ use rand_chacha::ChaCha20Rng;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-use crate::crypto::{Blake3Hasher, SecureKey, Shake3_256};
+use crate::crypto::{Blake3Hasher, Shake3_256};
 use crate::error::{VaultError, VaultResult};
 
 /// Login attempt record
@@ -68,7 +68,7 @@ pub enum ChallengeType {
 }
 
 /// Anti-AI CAPTCHA challenge
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CaptchaChallenge {
     /// Challenge ID
     pub id: [u8; 16],
@@ -240,8 +240,14 @@ impl LoginRateLimiter {
 
     /// Generate anti-AI CAPTCHA challenge
     fn generate_challenge(&mut self) -> VaultResult<CaptchaChallenge> {
-        let rng = self.rng.as_mut().ok_or(VaultError::InsufficientEntropy)?;
+        // Take the RNG out of self to avoid borrow checker issues
+        let mut rng = self.rng.take().ok_or(VaultError::InsufficientEntropy)?;
 
+        // Generate challenge ID
+        let mut id = [0u8; 16];
+        rng.fill(&mut id);
+
+        // Determine challenge type
         let challenge_type = match rng.gen_range(0..8) {
             0 => ChallengeType::HashPuzzle,
             1 => ChallengeType::SemanticReasoning,
@@ -253,10 +259,11 @@ impl LoginRateLimiter {
             _ => ChallengeType::TimingProof,
         };
 
-        let mut id = [0u8; 16];
-        rng.fill(&mut id);
+        // Generate the challenge content
+        let (challenge_data, expected_hash) = self.create_challenge_content(challenge_type, &mut rng)?;
 
-        let (challenge_data, expected_hash) = self.create_challenge_content(challenge_type, rng)?;
+        // Put the RNG back
+        self.rng = Some(rng);
 
         let now = Utc::now();
         let min_solve = match challenge_type {

@@ -9,9 +9,10 @@
 // - Flat distributed prime generation
 // - Sophie Germain primes for DH parameters
 
-use num_bigint::{BigUint, RandBigInt, ToBigUint};
+use num_bigint::{BigUint, ToBigUint};
 use num_integer::Integer;
-use num_traits::{One, Zero};
+use num_traits::One;
+use rand::RngCore;
 use rand::rngs::OsRng;
 
 use crate::error::{VaultError, VaultResult};
@@ -56,7 +57,12 @@ impl PrimeVerifier {
         for _ in 0..rounds {
             // Random a in [2, n-2]
             let a = loop {
-                let candidate = rng.gen_biguint_below(&n_minus_two);
+                // Generate random bytes and convert to BigUint
+                let byte_len = ((n.bits() / 8) + 1) as usize;
+                let mut bytes = vec![0u8; byte_len];
+                rng.fill_bytes(&mut bytes);
+                let candidate = BigUint::from_bytes_le(&bytes);
+                let candidate = candidate % &n_minus_two;
                 if candidate >= two {
                     break candidate;
                 }
@@ -160,7 +166,11 @@ impl PrimeVerifier {
         let max_attempts = 10000;
 
         for _ in 0..max_attempts {
-            let mut candidate = rng.gen_biguint(bits as u64);
+            // Generate random bytes and convert to BigUint
+            let byte_len = (bits / 8) + 1;
+            let mut bytes = vec![0u8; byte_len];
+            rng.fill_bytes(&mut bytes);
+            let mut candidate = BigUint::from_bytes_le(&bytes);
             // Ensure odd and correct bit length
             candidate |= BigUint::one(); // Make odd
             candidate |= BigUint::one() << (bits - 1); // Ensure high bit set
