@@ -1,0 +1,157 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+# Svalinn Vault Backup Configuration
+
+let Backup = {
+  # Local backup settings
+  local = {
+    # Directory to store backups
+    directory = "/vault/backups",
+    
+    # Backup rotation policy
+    rotation = {
+      # Number of local backups to keep
+      keep = 7,
+      
+      # Minimum backup interval (hours)
+      min_interval = 24,
+    },
+    
+    # Encryption settings
+    encryption = {
+      # Key derivation parameters
+      argon2 = {
+        memory = 65536,      # 64 MiB
+        iterations = 4,
+        parallelism = 4,
+      },
+    },
+  },
+  
+  # Remote backup settings
+  remote = {
+    # Enable remote backups
+    enabled = false,
+    
+    # Remote storage type: "s3", "sftp", "local"
+    type = "sftp",  # Changed to SFTP as primary
+    
+    # S3 configuration (if type = "s3")
+    s3 = {
+      bucket = "svalinn-vault-backups",
+      region = "auto",
+      endpoint = "https://s3.amazonaws.com",
+      # Credentials would be provided at runtime
+    },
+    
+    # SFTP configuration (if type = "sftp")
+    sftp = {
+      host = "backup.example.com",
+      port = 22,
+      username = "vault-backup",
+      # SSH key path (expanded at runtime)
+      key_path = "~/.ssh/id_ed25519",
+      directory = "/backups/svalinn",
+      # SSH key passphrase (optional, prompted at runtime)
+      use_passphrase = false,
+      # Connection timeout (seconds)
+      timeout = 30,
+      # Retry policy
+      max_retries = 3,
+      retry_delay = 5,  # seconds
+    },
+    
+    # Remote rotation policy
+    rotation = {
+      keep = 30,           # Keep 30 remote backups
+      verify_on_upload = true,  # Verify backups after upload
+      # Verify remote backups periodically
+      verify_interval = 7,  # days
+    },
+  },
+  
+  # Automated backup schedule
+  schedule = {
+    # Enable automated backups
+    enabled = true,
+    
+    # Backup frequency
+    frequency = "daily",  # "hourly", "daily", "weekly"
+    
+    # Time of day for daily backups (HH:MM)
+    time = "02:30",
+    
+    # Days for weekly backups (0=Sunday, 6=Saturday)
+    day = 0,  # Sunday
+  },
+  
+  # Backup verification
+  verification = {
+    # Verify backups after creation
+    verify_on_create = true,
+    
+    # Test restore frequency
+    test_restore_interval = 7,  # days
+    
+    # Sample size for test restores
+    test_sample_size = 3,
+  },
+  
+  # Security settings
+  security = {
+    # Require manual confirmation for restores
+    require_confirmation = true,
+    
+    # Audit log all backup/restore operations
+    audit_log = true,
+    
+    # Encrypt backup keys separately
+    separate_key_storage = true,
+    
+    # Key storage location (if separate_key_storage = true)
+    key_storage = "/vault/keys/backup.keys",
+  },
+  
+  # Notification settings
+  notifications = {
+    # Enable backup notifications
+    enabled = true,
+    
+    # Notification methods
+    methods = ["email", "syslog"],
+    
+    # Email settings
+    email = {
+      to = ["admin@example.com"],
+      from = "vault@example.com",
+      smtp_server = "smtp.example.com",
+      smtp_port = 587,
+    },
+    
+    # Notify on these events
+    events = ["backup_success", "backup_failure", "restore_success", "restore_failure"],
+  },
+  
+  # Performance settings
+  performance = {
+    # Maximum backup throughput (MB/s)
+    max_throughput = 50,
+    
+    # Compression level (0-9, 0=none, 9=max)
+    compression = 6,
+    
+    # Parallel backup workers
+    workers = 2,
+  },
+} in
+
+# Export backup configuration
+{
+  backup = Backup,
+  
+  # Version information
+  version = "1.0.0",
+  
+  # Compatibility
+  min_vault_version = "0.1.0",
+  max_vault_version = "0.2.0",
+}
