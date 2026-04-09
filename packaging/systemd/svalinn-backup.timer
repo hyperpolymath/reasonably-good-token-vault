@@ -1,0 +1,14 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+[Unit]
+Description=Run Svalinn Vault backups daily
+
+[Timer]
+OnCalendar=*-*-* 02:30:00
+Persistent=true
+RandomizedDelaySec=300
+
+# Ensure backup runs even if system was off
+AccuracySec=1h
+
+[Install]
+WantedBy=timers.target

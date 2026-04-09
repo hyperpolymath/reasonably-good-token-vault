@@ -1,0 +1,31 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+[Unit]
+Description=Svalinn Vault - Secure Identity Vault
+Documentation=https://github.com/hyperpolymath/reasonably-good-token-vault
+After=network.target
+
+[Service]
+Type=simple
+User=vault
+Group=vault
+ExecStart=/usr/bin/svalinn vault serve
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=on-failure
+RestartSec=5s
+Environment=SVALINN_CONFIG=/etc/svalinn/config.nickel
+Environment=RUST_LOG=info
+
+# Security hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=read-only
+ReadWritePaths=/var/lib/svalinn
+ReadOnlyPaths=/etc/svalinn
+
+# Resource limits
+MemoryLimit=512M
+CPUQuota=50%
+
+[Install]
+WantedBy=multi-user.target

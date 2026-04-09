@@ -1,0 +1,25 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+[Unit]
+Description=Svalinn Vault Backup Service
+Documentation=https://github.com/hyperpolymath/reasonably-good-token-vault
+After=network.target
+
+[Service]
+Type=oneshot
+User=vault
+Group=vault
+ExecStart=/usr/bin/svalinn backup create --output /var/lib/svalinn/backups
+Environment=SVALINN_CONFIG=/etc/svalinn/config.nickel
+Environment=RUST_LOG=info
+
+# Security hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=read-only
+ReadWritePaths=/var/lib/svalinn
+ReadOnlyPaths=/etc/svalinn
+
+# Resource limits
+MemoryLimit=256M
+CPUQuota=25%
