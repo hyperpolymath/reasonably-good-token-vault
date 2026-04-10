@@ -2,8 +2,67 @@
 # 0-AI-MANIFEST.a2ml — Universal AI Agent Entry Point
 
 [manifest]
-version = "0.2"
+version = "0.3"
 format = "a2ml"
+
+[project-identity]
+name = "Reasonably Good Token Vault (RGTV)"
+one-line = "Zero-trust credential broker for LLM agents — agents use secrets via opaque grants without ever seeing the raw values."
+kind = "top-level monorepo"
+not-to-be-confused-with = [
+  "Svalinn — a completely separate project (Deno HTTP gateway for verified container operations, delegates to Vörðr)",
+  "Rokur — Svalinn's INTERNAL secrets-management component, managed via Stapeln's GUI. Rokur lives in the Svalinn orbit, NOT here.",
+]
+
+[disambiguation-gate]
+# READ THIS BEFORE DOING ANY WORK IN THIS REPO.
+#
+# Three projects are frequently conflated. They are DISTINCT:
+#
+#   1. RGTV (THIS REPO)
+#      Purpose: zero-trust credential broker so LLM agents can USE secrets
+#               without ever SEEING them. Agents hold opaque handles/grants;
+#               RGTV performs the privileged action and returns the result.
+#      Scope:   broker daemon, CLI, honeypot, validation, audit, deception
+#               surfaces, multi-language bindings (Ada CLI, terraform,
+#               ansible), zero-knowledge proxy (see docs/DESIGN-2026-03-16-
+#               zero-knowledge-proxy.md).
+#
+#   2. Svalinn (DIFFERENT REPO: /var/mnt/eclipse/repos/svalinn)
+#      Purpose: Deno-based HTTP edge gateway that validates container
+#               operation requests and delegates to Vörðr. Auth, policy,
+#               orchestration for verified containers.
+#      Scope:   NOT a secrets manager. NOT an LLM broker. Container ops only.
+#
+#   3. Rokur (LIVES IN SVALINN'S ORBIT — NOT THIS REPO)
+#      Purpose: Svalinn's OWN internal secrets store (OAuth keys, JWT keys,
+#               TLS certs — the credentials Svalinn itself needs to operate).
+#      Surface: managed via Stapeln's GUI/UX.
+#      Scope:   infrastructure dependency of Svalinn, not a product.
+#
+# If you came here looking for Svalinn (container gateway): WRONG PLACE.
+#   → go to /var/mnt/eclipse/repos/svalinn
+# If you came here looking for Rokur (Svalinn's secret store): WRONG PLACE.
+#   → go to the Svalinn repo and look for its Rokur component.
+# If you came here for zero-trust LLM credential brokering: RIGHT PLACE.
+
+# Internal subdirs named `svalinn-cli`, `terraform-provider-svalinn`, and
+# `ansible-collection-svalinn` are MISNAMED legacy scaffolding. They belong
+# to RGTV, not to the Svalinn gateway project. Rename is pending.
+
+ai-agent-instructions = """
+Before acting on any request in this repo, CONFIRM WITH THE USER which of
+the three projects (RGTV / Svalinn / Rokur) they actually mean. Do not
+assume — the naming collision has caused real confusion. A good opening
+prompt:
+
+  "Just to confirm — you're in the RGTV repo (zero-trust credential broker
+  for LLM agents). Did you mean RGTV, or were you looking for Svalinn (the
+  container gateway) or Rokur (Svalinn's internal secret store)?"
+
+Only proceed once the user has explicitly confirmed RGTV is the intended
+target. If they meant Svalinn or Rokur, redirect them to the correct repo.
+"""
 
 [canonical-locations]
 machine-readable = ".machine_readable/"
