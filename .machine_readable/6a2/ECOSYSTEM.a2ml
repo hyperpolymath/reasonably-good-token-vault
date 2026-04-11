@@ -2,19 +2,46 @@
 # Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
 #
 # ECOSYSTEM.a2ml — Reasonably Good Token Vault ecosystem position
+
 [metadata]
-version = "0.1.0"
-last-updated = "2026-02-08"
+version = "0.2.0"
+last-updated = "2026-04-11"
 
 [project]
-name = "Reasonably Good Token Vault"
-purpose = "FFI bridges between languages via Zig"
-role = ""
+name = "Reasonably Good Token Vault (RGTV)"
+purpose = """Zero-trust LLM credential broker. Prevents raw credential values from
+appearing in LLM agent context, prompts, or logs. Agents obtain opaque one-use
+grant UUIDs; they redeem grants for values which are Zeroized from memory after
+single use. Distinct from Svalinn (container gateway) and Rokur (Svalinn's
+internal secrets UI). See MEMORY: rokur-rgtv-svalinn-disambiguation.md."""
+role = "credential-broker"
 
 [position-in-ecosystem]
-category = ""
+tier = "security-infrastructure"
+category = "zero-trust"
 
 [related-projects]
 projects = [
-  # No related projects recorded
+  { name = "nesy-solver-api (proven-servers)", relationship = "consumer", notes = "First wired consumer. Uses rgtv_client.v to fetch NESY_INGEST_TOKEN via grant→redeem. Deployed as rgtv-nesy on Fly.io." },
+  { name = "svalinn", relationship = "sibling-security", notes = "Svalinn is a Deno container gateway; RGTV is a Rust credential broker. Different concerns, sometimes confused. Do NOT merge." },
+  { name = "rokur", relationship = "sibling-security", notes = "Rokur is Svalinn's internal secrets store (Stapeln GUI). RGTV is a standalone broker. Different projects." },
+  { name = "vault-core", relationship = "internal-component", notes = "Existing crypto library crate in this monorepo. vault-broker builds on it." },
+  { name = "hypatia", relationship = "planned-consumer", notes = "CI scanning agent should use RGTV to fetch scan credentials rather than env vars." },
+  { name = "gitbot-fleet", relationship = "planned-consumer", notes = "Bot agents should fetch GitHub tokens via RGTV grant→redeem." },
+  { name = "007", relationship = "planned-consumer", notes = "Private language toolchain — agents must not see raw API tokens." },
+  { name = "verisimdb", relationship = "planned-integration", notes = "Audit log of grant/redeem/honeypot events should feed VeriSimDB." },
 ]
+
+[integration-points]
+points = [
+  { system = "nesy-solver-api", direction = "inbound", protocol = "HTTP POST /v1/grants + /v1/grants/:id/redeem, Bearer auth" },
+  { system = "Fly.io private 6PN", direction = "inbound", protocol = "flycast DNS at rgtv-nesy.flycast:9100 (not .internal — auto-wake required)" },
+  { system = "vault-core", direction = "internal", protocol = "Rust crate dependency — Zeroizing<String> storage" },
+]
+
+[deployment]
+platform = "Fly.io"
+app-name = "rgtv-nesy"
+region = "lhr"
+url-scheme = "http://rgtv-nesy.flycast:9100 (private 6PN only)"
+state-files = "~/.config/nesy-solver/rgtv-agent-token (gitignored)"

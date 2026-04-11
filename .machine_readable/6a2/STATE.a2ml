@@ -2,37 +2,68 @@
 # Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
 #
 # STATE.a2ml — Reasonably Good Token Vault project state
+
 [metadata]
 project = "reasonably-good-token-vault"
-version = "0.1.0"
-last-updated = "2026-02-08"
+version = "0.2.0"
+last-updated = "2026-04-11"
 status = "active"
-session = "converted from scheme — 2026-04-11"
 
 [project-context]
-name = "Reasonably Good Token Vault"
-purpose = """FFI bridges between languages via Zig"""
-completion-percentage = 20
+name = "Reasonably Good Token Vault (RGTV)"
+purpose = """Zero-trust LLM credential broker. Issues opaque one-use grants to
+authenticated agents; agents redeem grants for raw credential values. Raw values
+never appear in agent context, prompts, or logs. Monorepo containing vault-core
+(crypto library), vault-broker (axum HTTP server), ada-cli, and FFI bindings."""
+completion-percentage = 45
 
 [position]
-phase = "initial"   # design | implementation | testing | maintenance | archived
-maturity = "experimental"  # experimental | alpha | beta | production | lts
+phase = "implementation"
+maturity = "alpha"
 
 [route-to-mvp]
 milestones = [
-  # No milestones recorded
+  { name = "vault-core: in-memory Zeroizing<String> credential store", completion = 100 },
+  { name = "vault-broker: axum HTTP server (grant + redeem endpoints)", completion = 100 },
+  { name = "vault-broker: Fly.io deploy config (fly.toml + Containerfile)", completion = 100 },
+  { name = "First consumer wired: nesy-solver-api RGTV client", completion = 100 },
+  { name = "deploy-fly.sh: rgtv phase with token persistence", completion = 100 },
+  { name = "Multi-consumer support (multiple hints per broker instance)", completion = 100 },
+  { name = "Grant TTL enforcement and expired-grant auto-purge", completion = 100 },
+  { name = "Honeypot endpoint (canary for credential sniffing)", completion = 20 },
+  { name = "RGTV Idris2 ABI formal proofs (grant lifecycle invariants)", completion = 0 },
+  { name = "Zig FFI layer (C-compatible vault_grant / vault_redeem)", completion = 0 },
+  { name = "Rate limiting per agent token", completion = 0 },
+  { name = "Audit log → VeriSimDB feed (grant/redeem/honeypot events)", completion = 0 },
+  { name = "Production key rotation (RGTV_AGENT_TOKEN hot-reload)", completion = 0 },
+  { name = "Additional consumers: hypatia, gitbot-fleet, 007", completion = 0 },
 ]
 
 [blockers-and-issues]
 issues = [
-  # No blockers recorded
+  "vault-broker not yet deployed to fly.io (deploy-fly.sh rgtv not yet run in production)",
+  "Containerfile uses debian:bookworm-slim — should migrate to Chainguard base per container policy",
+  "RGTV_AGENT_TOKEN in nesy-solver-api is staged but not yet applied (requires deploy)",
+  "No audit log yet — grant/redeem events not persisted anywhere",
 ]
 
 [critical-next-actions]
 actions = [
-  # No actions recorded
+  "Run: NESY_INGEST_TOKEN=<tok> ./deploy-fly.sh rgtv (from proven-servers/connectors/proven-nesy-solver-api/v/)",
+  "Run full deploy: ./deploy-fly.sh all to wire RGTV_AGENT_TOKEN into nesy-solver-api",
+  "Migrate Containerfile from debian:bookworm-slim to cgr.dev/chainguard/rust:latest (builder) + cgr.dev/chainguard/static:latest (runtime)",
+  "Add Idris2 proofs for grant lifecycle (issued → redeemed → expired transitions)",
+  "Add VeriSimDB audit feed for grant/redeem events",
+]
+
+[completed-work]
+entries = [
+  { date = "2026-04-11", description = "vault-broker crate: axum 0.7 HTTP server with /health, POST /v1/grants, POST /v1/grants/:id/redeem. Zeroizing<String> for all credential storage. IPv6 dual-stack bind. UUID v4 grants. Auto-purge of expired grants on each create call." },
+  { date = "2026-04-11", description = "vault-broker fly.toml and Containerfile: multi-stage Rust build on debian:bookworm-slim, non-root rgtv user, curl HEALTHCHECK, TCP service on :9100 with /health check and 15s grace period." },
+  { date = "2026-04-11", description = "nesy-solver-api RGTV client (rgtv_client.v): two-step grant→redeem protocol, 10s read timeout, falls back to NESY_INGEST_TOKEN env if RGTV_URL unset." },
+  { date = "2026-04-11", description = "deploy-fly.sh rgtv phase: load_or_pick_rgtv_token() persists agent token to ~/.config/nesy-solver/rgtv-agent-token, stages RGTV_AGENT_TOKEN + RGTV_CRED_NESY_INGEST_TOKEN, deploys broker, wires token into nesy-solver-api." },
 ]
 
 [maintenance-status]
-last-run-utc = "2026-02-08T00:00:00Z"
-last-result = "unknown"  # unknown | pass | warn | fail
+last-run-utc = "2026-04-11T00:00:00Z"
+last-result = "unknown"

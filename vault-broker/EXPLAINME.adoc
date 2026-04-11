@@ -1,0 +1,113 @@
+// SPDX-License-Identifier: PMPL-1.0-or-later
+// Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
+= vault-broker — RGTV HTTP Grant Broker
+:toc: left
+:toclevels: 2
+:icons: font
+
+== What this is
+
+`vault-broker` is the HTTP server component of the
+https://github.com/hyperpolymath/reasonably-good-token-vault[Reasonably Good Token Vault (RGTV)].
+It issues opaque one-use *grants* to authenticated agents and lets them
+*redeem* those grants for raw credential values — without the raw values
+ever appearing in agent context, prompts, or logs.
+
+== Why it exists
+
+LLM agents that call external APIs need credentials.  The naive approach
+puts raw tokens in environment variables that the agent can see and log.
+RGTV breaks this: agents only ever see a `grant_id` UUID.  The raw value
+is returned once on redemption, used, and `Zeroize`d from memory.
+
+== Protocol (two steps)
+
+[source]
+----
+POST /v1/grants
+  Authorization: Bearer <RGTV_AGENT_TOKEN>
+  Content-Type: application/json
+  Body: { "hint": "NESY_INGEST_TOKEN" }
+
+→ 201 Created
+  { "grant_id": "<uuid-v4>", "hint": "NESY_INGEST_TOKEN", "expires_in_secs": 30 }
+
+POST /v1/grants/<grant_id>/redeem
+  Authorization: Bearer <RGTV_AGENT_TOKEN>
+  Content-Type: application/json
+  Body: {}
+
+→ 200 OK
+  { "hint": "NESY_INGEST_TOKEN", "value": "<raw-credential>" }
+----
+
+Grants are single-use and expire after 30 seconds.  Expired or already-redeemed
+grants return `404`.
+
+== Endpoints
+
+[cols="1,3"]
+|===
+| `GET /health`           | Liveness probe.  Returns `{"status":"ok"}`.
+| `POST /v1/grants`       | Request a one-use grant for a named credential hint.
+| `POST /v1/grants/:id/redeem` | Redeem a grant; raw value is returned and then Zeroized.
+|===
+
+All endpoints except `/health` require `Authorization: Bearer <RGTV_AGENT_TOKEN>`.
+
+== Configuration (environment variables)
+
+[cols="1,1,3"]
+|===
+| Variable | Required | Description
+| `RGTV_AGENT_TOKEN`           | Yes | Shared bearer token for all agents.
+| `RGTV_CRED_<HINT>`           | One+ | Credential value for `<HINT>`.  E.g. `RGTV_CRED_NESY_INGEST_TOKEN`.
+| `PORT`                       | No  | Listen port (default `9100`).
+|===
+
+Credentials are loaded from env at startup and stored as `Zeroizing<String>`.
+
+== Fly.io deployment
+
+The broker runs as `rgtv-nesy` on Fly.io, reachable from other Fly apps via
+`http://rgtv-nesy.flycast:9100` (`.flycast`, not `.internal` — required for
+auto-wake of stopped machines).
+
+[source,bash]
+----
+# First-time deploy (from proven-servers connector directory):
+NESY_INGEST_TOKEN=<token> ./deploy-fly.sh rgtv
+
+# Full stack deploy:
+NESY_INGEST_TOKEN=<token> ./deploy-fly.sh all
+----
+
+State files (gitignored):
+
+* `~/.config/nesy-solver/rgtv-agent-token` — agent token, generated once and reused.
+
+== Tech stack
+
+* *Rust* + axum 0.7 + tokio (full)
+* *zeroize* — `Zeroizing<String>` wrappers on all credential storage
+* *uuid* v4 — grant IDs
+* *chrono* — TTL expiry tracking
+* *tracing* — structured logs (no credential values ever logged)
+
+== Security properties
+
+* Raw credential values never appear in logs, error messages, or HTTP responses
+  other than the single `/redeem` call.
+* Grants are opaque UUIDs; knowing a `grant_id` without the `RGTV_AGENT_TOKEN`
+  yields nothing (both required).
+* `Zeroize` on drop ensures credentials are wiped from memory after redemption.
+* Expired grants are auto-purged on each `/v1/grants` request.
+
+== What is NOT yet done
+
+* Chainguard base image (Containerfile currently uses `debian:bookworm-slim`)
+* Audit log → VeriSimDB
+* Idris2 ABI formal proofs (grant lifecycle invariants)
+* Zig FFI layer
+* Rate limiting per agent token
+* Hot-reload of `RGTV_AGENT_TOKEN` without restart
