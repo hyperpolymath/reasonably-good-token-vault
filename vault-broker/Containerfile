@@ -1,0 +1,38 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+# vault-broker Containerfile — multi-stage Rust build on Chainguard base
+
+FROM docker.io/library/rust:1.85-slim-bookworm AS builder
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    pkg-config \
+    libssl-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /build
+COPY Cargo.toml Cargo.lock* ./
+COPY src ./src
+
+RUN cargo build --release --bin vault-broker
+
+# ---- Runtime ----
+FROM docker.io/library/debian:bookworm-slim
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    libssl3 \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+COPY --from=builder /build/target/release/vault-broker /app/vault-broker
+
+RUN useradd -r -s /bin/false rgtv
+USER rgtv
+
+EXPOSE 9100
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+    CMD curl -fs http://localhost:9100/health || exit 1
+
+ENTRYPOINT ["/app/vault-broker"]

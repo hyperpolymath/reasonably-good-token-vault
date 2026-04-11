@@ -1,0 +1,58 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+# Fly.io deployment for the RGTV vault-broker.
+#
+# Internal-only: the broker is reached via rgtv-nesy.flycast:9100 from
+# other apps in the same org (nesy-solver-api, etc.).  No public edge.
+# Use .flycast (not .internal) so Fly auto-wakes the machine on first request.
+#
+# Required fly secrets (set BEFORE first deploy):
+#   flyctl secrets set \
+#     RGTV_AGENT_TOKEN=<shared-secret-also-set-on-nesy-solver-api> \
+#     RGTV_CRED_NESY_INGEST_TOKEN=<value> \
+#     -a rgtv-nesy
+#
+# Deploy:
+#   cd vault-broker
+#   flyctl launch --no-deploy --copy-config --name rgtv-nesy
+#   flyctl secrets set RGTV_AGENT_TOKEN=... RGTV_CRED_NESY_INGEST_TOKEN=...
+#   flyctl deploy -c fly.toml -f Containerfile
+
+app = "rgtv-nesy"
+primary_region = "lhr"
+kill_signal = "SIGTERM"
+kill_timeout = "5s"
+
+[build]
+  dockerfile = "Containerfile"
+
+[env]
+  RUST_LOG = "vault_broker=info"
+  RGTV_PORT = "9100"
+  RGTV_GRANT_TTL_SECS = "30"
+  # RGTV_AGENT_TOKEN and RGTV_CRED_* set via flyctl secrets
+
+# Internal-only TCP on :9100 — no public http_service block.
+[[services]]
+  protocol = "tcp"
+  internal_port = 9100
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ["app"]
+
+  [[services.ports]]
+    port = 9100
+    handlers = []  # no TLS — 6PN internal only
+
+  [[services.http_checks]]
+    interval = "30s"
+    timeout = "5s"
+    grace_period = "15s"
+    method = "GET"
+    path = "/health"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "256mb"
+  cpu_kind = "shared"
+  cpus = 1
