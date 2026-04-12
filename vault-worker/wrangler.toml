@@ -1,0 +1,64 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+# wrangler.toml — Cloudflare Workers deployment for vault-worker (production)
+#
+# This is the production deployment target for RGTV.  Fly.io (vault-broker) was
+# only used for spot-testing internal flycast connectivity.
+#
+# Worker name: rgtv-vault
+# Entry point: WASM compiled from Rust via worker-build
+#
+# ── One-time setup ──────────────────────────────────────────────────────────
+#
+#  1. Create the two KV namespaces:
+#       wrangler kv:namespace create CREDENTIALS
+#       wrangler kv:namespace create GRANTS
+#     Then paste the returned IDs into the [[kv_namespaces]] blocks below.
+#
+#  2. Set the agent token (never stored in this file):
+#       wrangler secret put RGTV_AGENT_TOKEN
+#
+#  3. Populate credentials in the CREDENTIALS namespace:
+#       wrangler kv:key put --namespace-id=<CREDENTIALS_ID> NESY_INGEST_TOKEN <value>
+#       wrangler kv:key put --namespace-id=<CREDENTIALS_ID> FLY_API_TOKEN <value>
+#       # ... one entry per hint
+#
+#  4. Deploy:
+#       just worker-deploy
+#
+# ────────────────────────────────────────────────────────────────────────────
+
+name = "rgtv-vault"
+
+# worker-build generates a JS shim that imports the WASM module.
+main = "build/worker/shim.mjs"
+compatibility_date = "2024-01-15"
+
+# WASM size limit is 10 MiB on free plan, 25 MiB on paid.
+# workers-rs compiled with opt-level = "s" + LTO typically lands under 2 MiB.
+
+# ── KV namespaces ────────────────────────────────────────────────────────────
+#
+# CREDENTIALS: hint → plaintext credential value
+#   (private namespace — only this worker can access it)
+#   TODO: encrypt values with RGTV_MASTER_KEY for defence-in-depth
+#
+# GRANTS: grant_id → hint  (30 s TTL, set by the worker at grant creation)
+#   NOTE: KV does not provide atomic read+delete, so double-spend is possible
+#   within the 30 s window if two redeem requests race.  For production use,
+#   migrate grant state to a Durable Object (see ROADMAP.adoc).
+#
+[[kv_namespaces]]
+binding = "CREDENTIALS"
+id = "REPLACE_WITH_CREDENTIALS_NAMESPACE_ID"
+preview_id = "REPLACE_WITH_CREDENTIALS_PREVIEW_ID"
+
+[[kv_namespaces]]
+binding = "GRANTS"
+id = "REPLACE_WITH_GRANTS_NAMESPACE_ID"
+preview_id = "REPLACE_WITH_GRANTS_PREVIEW_ID"
+
+# ── Environment variables ─────────────────────────────────────────────────
+[vars]
+RGTV_GRANT_TTL_SECS = "30"
+# RGTV_AGENT_TOKEN — set via: wrangler secret put RGTV_AGENT_TOKEN
+# (never put secrets in this file)

@@ -1,0 +1,33 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+[package]
+name = "vault-worker"
+version = "0.1.0"
+edition = "2021"
+license = "PMPL-1.0-or-later"
+description = "RGTV vault-worker — Cloudflare Workers implementation of the grant broker (production target)"
+authors = ["Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>"]
+repository = "https://github.com/hyperpolymath/reasonably-good-token-vault"
+
+# Workers Rust crates compile to cdylib targeting wasm32-unknown-unknown.
+[lib]
+crate-type = ["cdylib"]
+path = "src/lib.rs"
+
+[dependencies]
+# Cloudflare Workers Rust SDK — provides fetch event, Router, KV, etc.
+# 0.8 is the latest stable release as of 2026-04.
+worker = "0.8"
+
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# uuid v4 needs the 'js' feature in WASM so it uses Math.random() for entropy.
+uuid = { version = "1.6", features = ["v4", "js"] }
+
+# Routes panic messages to the Workers console log rather than aborting silently.
+console_error_panic_hook = "0.1"
+
+[profile.release]
+# Workers bundles are size-limited: optimize aggressively.
+opt-level = "s"
+lto = true

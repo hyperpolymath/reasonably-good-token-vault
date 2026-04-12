@@ -23,6 +23,10 @@ build-cli:
 build-core:
     cargo build --manifest-path vault-core/Cargo.toml --release
 
+# Build vault-worker WASM (requires worker-build: cargo install worker-build)
+build-worker:
+    cd vault-worker && worker-build --release
+
 # Run tests for all Rust crates
 test:
     cargo test --manifest-path vault-broker/Cargo.toml
@@ -79,6 +83,46 @@ broker-dev:
     @echo "Starting vault-broker in foreground (dev mode)..."
     @echo "Required: RGTV_AGENT_TOKEN, RGTV_CRED_<HINT>=<value>"
     cargo run --manifest-path vault-broker/Cargo.toml
+
+# ---------------------------------------------------------------------------
+# Cloudflare Workers (production deployment)
+# ---------------------------------------------------------------------------
+
+# Run vault-worker locally via wrangler dev.
+# Requires: wrangler installed (npm i -g wrangler — or via Deno)
+#           KV namespace preview IDs set in vault-worker/wrangler.toml
+#           wrangler.toml RGTV_AGENT_TOKEN set for local testing
+worker-dev:
+    @echo "Starting vault-worker in local dev mode (wrangler)..."
+    @echo "Ensure KV preview IDs are set in vault-worker/wrangler.toml"
+    cd vault-worker && wrangler dev
+
+# Deploy vault-worker to Cloudflare Workers (production).
+# One-time prerequisites:
+#   1. wrangler kv:namespace create CREDENTIALS  → paste ID into wrangler.toml
+#   2. wrangler kv:namespace create GRANTS       → paste ID into wrangler.toml
+#   3. wrangler secret put RGTV_AGENT_TOKEN
+#   4. Populate credentials: wrangler kv:key put --namespace-id=<ID> HINT value
+#   5. just worker-deploy
+worker-deploy:
+    @echo "Deploying vault-worker to Cloudflare Workers..."
+    @echo "Ensure KV namespace IDs are set in vault-worker/wrangler.toml"
+    cd vault-worker && wrangler deploy
+
+# Tail live vault-worker logs from Cloudflare.
+worker-logs:
+    cd vault-worker && wrangler tail
+
+# List credentials in the CREDENTIALS KV namespace (prod).
+# Requires: CREDENTIALS namespace ID set in wrangler.toml
+worker-creds-list:
+    @echo "Listing CREDENTIALS KV keys (prod)..."
+    @wrangler kv:key list --namespace-id=$$(grep -A1 'binding = "CREDENTIALS"' vault-worker/wrangler.toml | grep 'id =' | sed 's/.*= "\(.*\)"/\1/')
+
+# Add a credential to the CREDENTIALS KV namespace.
+#   just worker-cred-put MY_TOKEN "the-actual-value"
+worker-cred-put hint value:
+    @wrangler kv:key put --namespace-id=$$(grep -A1 'binding = "CREDENTIALS"' vault-worker/wrangler.toml | grep 'id =' | sed 's/.*= "\(.*\)"/\1/') {{hint}} "{{value}}"
 
 # Generate vexometer traces
 trace input:

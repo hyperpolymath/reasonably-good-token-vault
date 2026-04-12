@@ -6,7 +6,7 @@
 [metadata]
 project = "reasonably-good-token-vault"
 version = "0.2.0"
-last-updated = "2026-04-12"
+last-updated = "2026-04-12 (session 2)"
 status = "active"
 
 [project-context]
@@ -15,7 +15,7 @@ purpose = """Zero-trust LLM credential broker. Issues opaque one-use grants to
 authenticated agents; agents redeem grants for raw credential values. Raw values
 never appear in agent context, prompts, or logs. Monorepo containing vault-core
 (crypto library), vault-broker (axum HTTP server), ada-cli, and FFI bindings."""
-completion-percentage = 55
+completion-percentage = 62
 
 [position]
 phase = "implementation"
@@ -33,6 +33,7 @@ milestones = [
   { name = "vault-broker GET /v1/credentials endpoint (list hints, no values)", completion = 100 },
   { name = "rgtv CLI wired to vault-broker HTTP API (get/list/status/verify/daemon)", completion = 100 },
   { name = "rgtv daemon start/stop/status (PID-file-managed vault-broker process)", completion = 100 },
+  { name = "vault-worker: Cloudflare Workers production target (Rust/WASM, workers-rs 0.8)", completion = 85 },
   { name = "Honeypot endpoint (canary for credential sniffing)", completion = 20 },
   { name = "RGTV Idris2 ABI formal proofs (grant lifecycle invariants)", completion = 0 },
   { name = "Zig FFI layer (C-compatible vault_grant / vault_redeem)", completion = 0 },
@@ -44,7 +45,10 @@ milestones = [
 
 [blockers-and-issues]
 issues = [
-  "vault-broker not yet deployed to fly.io (deploy-fly.sh rgtv not yet run in production)",
+  "vault-worker: KV grant store is not atomic (no read+delete CAS in CF KV) — production needs Durable Objects",
+  "vault-worker: wrangler.toml has placeholder KV namespace IDs — must run wrangler kv:namespace create before deploy",
+  "vault-worker: credential values stored plaintext in KV — TODO: encrypt with RGTV_MASTER_KEY Worker Secret",
+  "vault-broker (Fly.io) not yet deployed to production — only spot-test role, CF Workers is production target",
   "Containerfile uses debian:bookworm-slim — should migrate to Chainguard base per container policy",
   "RGTV_AGENT_TOKEN in nesy-solver-api is staged but not yet applied (requires deploy)",
   "No audit log yet — grant/redeem events not persisted anywhere",
@@ -53,8 +57,10 @@ issues = [
 
 [critical-next-actions]
 actions = [
-  "Run: NESY_INGEST_TOKEN=<tok> ./deploy-fly.sh rgtv (from proven-servers/connectors/proven-nesy-solver-api/v/)",
-  "Run full deploy: ./deploy-fly.sh all to wire RGTV_AGENT_TOKEN into nesy-solver-api",
+  "vault-worker production deploy: wrangler kv:namespace create CREDENTIALS + GRANTS → update wrangler.toml IDs → wrangler secret put RGTV_AGENT_TOKEN → populate credentials → just worker-deploy",
+  "Migrate vault-worker grant store from KV to Durable Objects for atomic one-use guarantee",
+  "Add RGTV_MASTER_KEY Worker Secret + AES-256-GCM encryption of CREDENTIALS KV values",
+  "Run: NESY_INGEST_TOKEN=<tok> ./deploy-fly.sh rgtv (Fly.io spot-test only)",
   "Migrate Containerfile from debian:bookworm-slim to cgr.dev/chainguard/rust:latest (builder) + cgr.dev/chainguard/static:latest (runtime)",
   "Add Idris2 proofs for grant lifecycle (issued → redeemed → expired transitions)",
   "Add VeriSimDB audit feed for grant/redeem events",
@@ -62,6 +68,7 @@ actions = [
 
 [completed-work]
 entries = [
+  { date = "2026-04-12 (s2)", description = "vault-worker: Cloudflare Workers production target (Rust/WASM, workers-rs 0.8). Same HTTP API as vault-broker. CREDENTIALS KV (hint→value, operator-managed). GRANTS KV (grant_id→hint, 30s TTL). Justfile: worker-dev, worker-deploy, worker-logs, worker-creds-list, worker-cred-put. KV double-spend caveat documented; Durable Objects migration on roadmap." },
   { date = "2026-04-12", description = "vault-broker: added GET /v1/credentials endpoint returning sorted hint names with no credential values. Fixed two pre-existing bugs: Zeroizing<String> clone in redeem handler, .json() tracing_subscriber call removed (feature not enabled)." },
   { date = "2026-04-12", description = "rgtv CLI (svalinn-cli crate renamed): full rewrite wired to vault-broker HTTP API. Commands: get (grant→redeem→exec with Zeroizing value), list (/v1/credentials), status (/health), verify (functional round-trip), daemon start/stop/status (PID-file managed). Binary renamed from svalinn_cli to rgtv. Added ureq+zeroize deps." },
   { date = "2026-04-12", description = "Justfile: replaced placeholder template targets with working broker/CLI targets (build-broker, build-cli, broker-dev, broker-start, broker-stop, broker-status, broker-logs, creds)." },
