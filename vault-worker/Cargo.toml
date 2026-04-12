@@ -27,6 +27,12 @@ uuid = { version = "1.6", features = ["v4", "js"] }
 # Routes panic messages to the Workers console log rather than aborting silently.
 console_error_panic_hook = "0.1"
 
+# Explicit transitive deps used directly in source.
+# workers-rs depends on these but naming them explicitly avoids surprise if
+# workers-rs ever changes its re-export surface.
+wasm-bindgen = "0.2"  # JsValue for DO request bodies
+js-sys = "0.3"        # Date::now() for Unix timestamps in WASM
+
 [profile.release]
 # Workers bundles are size-limited: optimize aggressively.
 opt-level = "s"

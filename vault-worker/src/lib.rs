@@ -3,36 +3,118 @@
 //
 // vault-worker — Cloudflare Workers implementation of the RGTV grant broker.
 //
-// This is the production deployment target.  It exposes an HTTP API identical
-// to vault-broker so that the rgtv CLI and all consumers can talk to either
-// without modification.
-//
 // Architecture:
 //   CREDENTIALS KV namespace — hint → credential value (operator-managed)
-//   GRANTS KV namespace      — grant_id → hint  (30 s TTL, set here)
+//   GRANTS DO namespace      — one GrantObject Durable Object per outstanding grant
 //
-// HTTP API (identical to vault-broker):
-//   GET  /health                        — unauthenticated liveness probe
-//   GET  /v1/credentials                — list registered hint names
-//   POST /v1/grants                     — issue a one-use grant for a hint
-//   POST /v1/grants/:id/redeem          — redeem grant, receive credential
+// Why Durable Objects for grants (not KV):
+//   KV has no atomic read+delete — two simultaneous redeem requests for the same
+//   grant could both succeed.  Durable Object instances are single-threaded: the
+//   Workers runtime queues concurrent fetches to the same DO instance.  The
+//   read+delete inside the POST handler is therefore a true atomic operation —
+//   the second request sees the key gone when it starts.
+//
+// HTTP API (identical to vault-broker — rgtv CLI works against both):
+//   GET  /health                     — unauthenticated liveness probe
+//   GET  /v1/credentials             — list registered hint names (authenticated)
+//   POST /v1/grants                  — issue a one-use grant (authenticated)
+//   POST /v1/grants/:id/redeem       — redeem grant, get credential (authenticated)
 //
 // Authentication:
 //   All endpoints except /health require:
-//     Authorization: Bearer <RGTV_AGENT_TOKEN>
-//
-// ── KV double-spend caveat (alpha) ─────────────────────────────────��────────
-//   KV does not provide atomic read+delete.  Two simultaneous redeem requests
-//   for the same grant_id may both succeed within the ~30 s TTL window.
-//   Acceptable for alpha (single-agent use, 30 s exposure window).
-//   Production mitigation: migrate GRANTS to a Durable Object.
-// ────────────────────────────────────────────────────────────────────────────
+//     Authorization: Bearer <RGTV_AGENT_TOKEN>   (Worker Secret)
 
-#![allow(clippy::future_not_send)] // workers-rs handlers are single-threaded WASM
+#![allow(clippy::future_not_send)] // workers-rs handlers run in single-threaded WASM
 
+use js_sys::Date;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use worker::*;
+
+// ---------------------------------------------------------------------------
+// Timestamp helper
+// ---------------------------------------------------------------------------
+
+/// Current time as Unix seconds, sourced from the JS runtime clock.
+fn now_secs() -> u64 {
+    (Date::now() / 1000.0) as u64
+}
+
+// ---------------------------------------------------------------------------
+// Grant record — stored in GrantObject DO storage
+// ---------------------------------------------------------------------------
+
+/// A pending, unredeemed grant.  Stored as a single DO storage entry under
+/// the key "record".  The DO instance is identified by the grant_id UUID, so
+/// there is a 1:1 correspondence between DO instances and outstanding grants.
+#[derive(Serialize, Deserialize)]
+struct GrantRecord {
+    hint: String,
+    /// Unix seconds at which the grant expires.
+    expires_at: u64,
+}
+
+// ---------------------------------------------------------------------------
+// GrantObject — Durable Object (one instance per outstanding grant)
+// ---------------------------------------------------------------------------
+
+/// A single DO instance owns exactly one grant record.  The Workers runtime
+/// serialises all fetches to a given instance, so the check-and-delete in the
+/// POST (redeem) handler is atomic — no locks, no races.
+#[durable_object]
+pub struct GrantObject {
+    state: State,
+    env: Env,
+}
+
+impl DurableObject for GrantObject {
+    fn new(state: State, env: Env) -> Self {
+        GrantObject { state, env }
+    }
+
+    async fn fetch(&self, mut req: Request) -> Result<Response> {
+        match req.method() {
+            // PUT — store a new grant record.
+            // Called once by handle_create_grant immediately after the grant_id
+            // is assigned.  Body: JSON-encoded GrantRecord.
+            Method::Put => {
+                let record: GrantRecord = req.json().await?;
+                self.state.storage().put("record", record).await?;
+                Response::ok("")
+            }
+
+            // POST — redeem: atomic read + delete.
+            // Because DO instances are single-threaded, no two POST requests
+            // to this instance can interleave.  The second one will find the
+            // key absent and receive 404.
+            Method::Post => {
+                let storage = self.state.storage();
+                // storage.get returns Result<Option<T>> in workers-rs 0.8.
+                match storage.get::<GrantRecord>("record").await {
+                    Ok(Some(record)) => {
+                        // Delete first — one-use is enforced before expiry is
+                        // checked so an expired grant is also consumed and gone.
+                        storage.delete("record").await?;
+
+                        if record.expires_at <= now_secs() {
+                            Response::error("grant expired", 410)
+                        } else {
+                            // Return only the hint; the worker resolves the
+                            // actual credential value from CREDENTIALS KV.
+                            Response::from_json(&serde_json::json!({ "hint": record.hint }))
+                        }
+                    }
+                    // Key absent (None) or storage error → treat as not found.
+                    Ok(None) | Err(_) => {
+                        Response::error("grant not found or already redeemed", 404)
+                    }
+                }
+            }
+
+            _ => Response::error("method not allowed", 405),
+        }
+    }
+}
 
 // ---------------------------------------------------------------------------
 // JSON wire types — identical to vault-broker for drop-in compatibility
@@ -78,15 +160,18 @@ struct ErrorBody {
 // Auth helper
 // ---------------------------------------------------------------------------
 
-/// Returns Ok(()) if the request carries the correct bearer token, otherwise
-/// a 401 Response.
+/// Returns `Ok(())` if the request carries the correct bearer token, or an
+/// error-carrying `Response` (caller should return it immediately).
 fn check_auth(req: &Request, env: &Env) -> std::result::Result<(), Response> {
     let token = match env.var("RGTV_AGENT_TOKEN") {
         Ok(v) => v.to_string(),
         Err(_) => {
-            // Fail closed: if the secret is not set, reject everything.
-            return Err(Response::error("server misconfigured: RGTV_AGENT_TOKEN not set", 500)
-                .unwrap_or_else(|_| Response::empty().unwrap()));
+            // Fail closed — if the secret is missing, reject every request.
+            return Err(Response::error(
+                "server misconfigured: RGTV_AGENT_TOKEN not set",
+                500,
+            )
+            .unwrap_or_else(|_| Response::empty().unwrap()));
         }
     };
     let expected = format!("Bearer {token}");
@@ -103,7 +188,6 @@ fn check_auth(req: &Request, env: &Env) -> std::result::Result<(), Response> {
     }
 }
 
-/// Convenience macro: return a 401 early if auth fails.
 macro_rules! require_auth {
     ($req:expr, $env:expr) => {
         if let Err(r) = check_auth($req, $env) {
@@ -113,7 +197,7 @@ macro_rules! require_auth {
 }
 
 // ---------------------------------------------------------------------------
-// Grant TTL helper
+// Grant TTL
 // ---------------------------------------------------------------------------
 
 fn grant_ttl(env: &Env) -> u64 {
@@ -124,17 +208,36 @@ fn grant_ttl(env: &Env) -> u64 {
 }
 
 // ---------------------------------------------------------------------------
+// DO call helper — build a Request to send to a GrantObject stub
+// ---------------------------------------------------------------------------
+
+/// Build a PUT request carrying `body_json` for the DO store operation.
+fn do_put_request(body_json: &str) -> Result<Request> {
+    let mut headers = Headers::new();
+    headers.set("Content-Type", "application/json")?;
+    let body = wasm_bindgen::JsValue::from_str(body_json);
+    let mut init = RequestInit::new();
+    init.with_method(Method::Put)
+        .with_headers(headers)
+        .with_body(Some(body));
+    Request::new_with_init("https://do/grant", &init)
+}
+
+/// Build a POST request (no body) for the DO redeem operation.
+fn do_post_request() -> Result<Request> {
+    let mut init = RequestInit::new();
+    init.with_method(Method::Post);
+    Request::new_with_init("https://do/grant", &init)
+}
+
+// ---------------------------------------------------------------------------
 // GET /health
 // ---------------------------------------------------------------------------
 
-/// Unauthenticated liveness probe.  Returns broker version and credential count.
+/// Unauthenticated — returns broker status and number of registered credentials.
 async fn handle_health(_req: Request, ctx: RouteContext<()>) -> Result<Response> {
     let kv = ctx.kv("CREDENTIALS")?;
-    // List all keys to get a count; KV list is eventually consistent but
-    // adequate for an informational health check.
-    let list = kv.list().execute().await?;
-    let count = list.keys.len();
-
+    let count = kv.list().execute().await?.keys.len();
     Response::from_json(&HealthResponse {
         status: "ok",
         version: "0.1.0",
@@ -146,17 +249,21 @@ async fn handle_health(_req: Request, ctx: RouteContext<()>) -> Result<Response>
 // GET /v1/credentials
 // ---------------------------------------------------------------------------
 
-/// List registered hint names.  No credential values are returned.
-/// Requires bearer token.
+/// List registered hint names — no credential values returned.
 async fn handle_credentials(req: Request, ctx: RouteContext<()>) -> Result<Response> {
     require_auth!(&req, &ctx.env);
 
     let kv = ctx.kv("CREDENTIALS")?;
-    let list = kv.list().execute().await?;
-    let mut hints: Vec<String> = list.keys.into_iter().map(|k| k.name).collect();
+    let mut hints: Vec<String> = kv
+        .list()
+        .execute()
+        .await?
+        .keys
+        .into_iter()
+        .map(|k| k.name)
+        .collect();
     hints.sort();
     let count = hints.len();
-
     Response::from_json(&CredentialsResponse { hints, count })
 }
 
@@ -165,8 +272,11 @@ async fn handle_credentials(req: Request, ctx: RouteContext<()>) -> Result<Respo
 // ---------------------------------------------------------------------------
 
 /// Issue a one-use grant for a named credential hint.
-/// Body: { "hint": "<HINT_NAME>" }
-/// Returns: { "grant_id": "…", "hint": "…", "expires_in_secs": 30 }
+///
+/// Creates a GrantObject DO instance keyed by the new grant_id UUID and PUTs
+/// the GrantRecord into it.  The DO instance will hold the record until it is
+/// redeemed (POST /v1/grants/:id/redeem) or the TTL elapses and the grant
+/// expires.
 async fn handle_create_grant(mut req: Request, ctx: RouteContext<()>) -> Result<Response> {
     require_auth!(&req, &ctx.env);
 
@@ -179,9 +289,8 @@ async fn handle_create_grant(mut req: Request, ctx: RouteContext<()>) -> Result<
         return Response::error("hint must not be empty", 400);
     }
 
-    // Validate the hint exists in the CREDENTIALS namespace.
-    let cred_kv = ctx.kv("CREDENTIALS")?;
-    if cred_kv.get(&hint).text().await?.is_none() {
+    // Validate the hint exists in CREDENTIALS before issuing a grant.
+    if ctx.kv("CREDENTIALS")?.get(&hint).text().await?.is_none() {
         return Response::error(
             &serde_json::to_string(&ErrorBody {
                 error: format!("unknown hint: {hint}"),
@@ -193,15 +302,17 @@ async fn handle_create_grant(mut req: Request, ctx: RouteContext<()>) -> Result<
 
     let ttl = grant_ttl(&ctx.env);
     let grant_id = Uuid::new_v4().to_string();
+    let record = GrantRecord {
+        hint: hint.clone(),
+        expires_at: now_secs() + ttl,
+    };
 
-    // Write grant to GRANTS KV with expiration TTL.  The value is the hint
-    // name — the broker never stores the credential value in the grant store.
-    let grants_kv = ctx.kv("GRANTS")?;
-    grants_kv
-        .put(&grant_id, hint.as_str())?
-        .expiration_ttl(ttl)
-        .execute()
-        .await?;
+    // Store the grant record in its DO instance.
+    let body_str = serde_json::to_string(&record)
+        .map_err(|e| Error::RustError(e.to_string()))?;
+    let ns = ctx.durable_object("GRANTS")?;
+    let stub = ns.id_from_name(&grant_id)?.get_stub()?;
+    stub.fetch_with_request(do_put_request(&body_str)?).await?;
 
     Response::from_json(&GrantResponse {
         grant_id,
@@ -216,11 +327,10 @@ async fn handle_create_grant(mut req: Request, ctx: RouteContext<()>) -> Result<
 // ---------------------------------------------------------------------------
 
 /// Redeem a grant and receive the credential value.
-/// One-use: the grant is deleted from GRANTS KV immediately after retrieval.
 ///
-/// ALPHA CAVEAT: KV does not provide atomic read+delete.  A racing duplicate
-/// redeem request within the KV eventual-consistency window (~few seconds)
-/// may also succeed.  For production, migrate to Durable Objects.
+/// POSTs to the GrantObject DO instance for this grant_id.  The DO's
+/// single-threaded handler performs an atomic read+delete — if two redeem
+/// requests race, only the first succeeds; the second receives 404.
 async fn handle_redeem_grant(req: Request, ctx: RouteContext<()>) -> Result<Response> {
     require_auth!(&req, &ctx.env);
 
@@ -229,20 +339,28 @@ async fn handle_redeem_grant(req: Request, ctx: RouteContext<()>) -> Result<Resp
         None => return Response::error("missing grant id", 400),
     };
 
-    let grants_kv = ctx.kv("GRANTS")?;
+    // Dispatch to the DO instance for this grant.
+    let ns = ctx.durable_object("GRANTS")?;
+    let stub = ns.id_from_name(&grant_id)?.get_stub()?;
+    let mut do_resp = stub.fetch_with_request(do_post_request()?).await?;
 
-    // Retrieve the hint stored under this grant ID.
-    let hint = match grants_kv.get(&grant_id).text().await? {
-        None => return Response::error("grant not found or already redeemed", 404),
-        Some(h) => h,
-    };
+    let status = do_resp.status_code();
+    if status != 200 {
+        // 404 = not found or already redeemed; 410 = expired.
+        // Pass the DO's error text directly to the caller.
+        let msg = do_resp.text().await.unwrap_or_default();
+        return Response::error(&msg, status);
+    }
 
-    // Delete immediately — one-use enforcement (non-atomic, see caveat above).
-    grants_kv.delete(&grant_id).await?;
+    // Extract the hint from the DO's JSON response.
+    let payload: serde_json::Value = do_resp.json().await?;
+    let hint = payload["hint"]
+        .as_str()
+        .ok_or_else(|| Error::RustError("malformed DO response: missing hint".into()))?
+        .to_string();
 
-    // Resolve the credential value from the CREDENTIALS namespace.
-    let cred_kv = ctx.kv("CREDENTIALS")?;
-    let value = match cred_kv.get(&hint).text().await? {
+    // Resolve the raw credential value from CREDENTIALS KV.
+    let value = match ctx.kv("CREDENTIALS")?.get(&hint).text().await? {
         None => return Response::error("credential no longer available", 500),
         Some(v) => v,
     };
@@ -256,8 +374,6 @@ async fn handle_redeem_grant(req: Request, ctx: RouteContext<()>) -> Result<Resp
 
 #[event(fetch)]
 pub async fn main(req: Request, env: Env, _ctx: Context) -> Result<Response> {
-    // Panic messages go to the Workers console log (not to the response body).
-    // In WASM there is no stack unwinding so this is belt-and-braces only.
     console_error_panic_hook::set_once();
 
     Router::new()
