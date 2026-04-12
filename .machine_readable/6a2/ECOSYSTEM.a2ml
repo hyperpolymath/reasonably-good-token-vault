@@ -4,8 +4,8 @@
 # ECOSYSTEM.a2ml — Reasonably Good Token Vault ecosystem position
 
 [metadata]
-version = "0.2.0"
-last-updated = "2026-04-11"
+version = "0.3.0"
+last-updated = "2026-04-12"
 
 [project]
 name = "Reasonably Good Token Vault (RGTV)"
@@ -22,10 +22,10 @@ category = "zero-trust"
 
 [related-projects]
 projects = [
-  { name = "nesy-solver-api (proven-servers)", relationship = "consumer", notes = "First wired consumer. Uses rgtv_client.v to fetch NESY_INGEST_TOKEN via grant→redeem. Deployed as rgtv-nesy on Fly.io." },
+  { name = "nesy-solver-api (proven-servers)", relationship = "consumer", notes = "First wired consumer. Fetches NESY_INGEST_TOKEN via grant→redeem protocol. Deployed as rgtv-nesy on Fly.io (spot-test only; production is CF Workers)." },
   { name = "svalinn", relationship = "sibling-security", notes = "Svalinn is a Deno container gateway; RGTV is a Rust credential broker. Different concerns, sometimes confused. Do NOT merge." },
   { name = "rokur", relationship = "sibling-security", notes = "Rokur is Svalinn's internal secrets store (Stapeln GUI). RGTV is a standalone broker. Different projects." },
-  { name = "vault-core", relationship = "internal-component", notes = "Existing crypto library crate in this monorepo. vault-broker builds on it." },
+  { name = "vault-core", relationship = "internal-component", notes = "Crypto library crate in this monorepo. vault-broker builds on it for Zeroizing<String> storage." },
   { name = "hypatia", relationship = "planned-consumer", notes = "CI scanning agent should use RGTV to fetch scan credentials rather than env vars." },
   { name = "gitbot-fleet", relationship = "planned-consumer", notes = "Bot agents should fetch GitHub tokens via RGTV grant→redeem." },
   { name = "007", relationship = "planned-consumer", notes = "Private language toolchain — agents must not see raw API tokens." },
@@ -35,12 +35,23 @@ projects = [
 [integration-points]
 points = [
   { system = "nesy-solver-api", direction = "inbound", protocol = "HTTP POST /v1/grants + /v1/grants/:id/redeem, Bearer auth" },
-  { system = "Fly.io private 6PN", direction = "inbound", protocol = "flycast DNS at rgtv-nesy.flycast:9100 (not .internal — auto-wake required)" },
-  { system = "vault-core", direction = "internal", protocol = "Rust crate dependency — Zeroizing<String> storage" },
+  { system = "Cloudflare Workers (production)", direction = "inbound", protocol = "HTTPS on rgtv-vault.workers.dev (or custom domain); same HTTP API as vault-broker" },
+  { system = "Fly.io private 6PN (spot-test only)", direction = "inbound", protocol = "flycast DNS at rgtv-nesy.flycast:9100 (not .internal — auto-wake required)" },
+  { system = "vault-core", direction = "internal", protocol = "Rust crate dependency — Zeroizing<String> storage (vault-broker only; vault-worker reimplements inline)" },
+  { system = "Cloudflare CREDENTIALS KV", direction = "internal", protocol = "hint → plaintext credential value; operator-managed; vault-worker only" },
+  { system = "Cloudflare GRANTS Durable Objects", direction = "internal", protocol = "one GrantObject DO instance per outstanding grant; atomic one-use enforcement; vault-worker only" },
 ]
 
 [deployment]
-platform = "Fly.io"
+# Production: Cloudflare Workers (vault-worker — Rust/WASM via workers-rs 0.8)
+platform-production = "Cloudflare Workers"
+worker-name = "rgtv-vault"
+worker-entry = "vault-worker/build/worker/shim.mjs"
+deploy-command = "just worker-deploy"
+grant-atomicity = "Durable Objects (single-threaded per instance; read+delete is atomic)"
+
+# Spot-test / internal: Fly.io (vault-broker — axum HTTP server)
+platform-spot-test = "Fly.io"
 app-name = "rgtv-nesy"
 region = "lhr"
 url-scheme = "http://rgtv-nesy.flycast:9100 (private 6PN only)"

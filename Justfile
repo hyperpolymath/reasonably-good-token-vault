@@ -100,7 +100,7 @@ worker-dev:
 # Deploy vault-worker to Cloudflare Workers (production).
 # One-time prerequisites:
 #   1. wrangler kv:namespace create CREDENTIALS  → paste ID into wrangler.toml
-#   2. wrangler kv:namespace create GRANTS       → paste ID into wrangler.toml
+#   2. (GRANTS is a Durable Object namespace — no KV create needed; DO migrations run on first deploy)
 #   3. wrangler secret put RGTV_AGENT_TOKEN
 #   4. Populate credentials: wrangler kv:key put --namespace-id=<ID> HINT value
 #   5. just worker-deploy

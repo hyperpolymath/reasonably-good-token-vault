@@ -3,8 +3,8 @@
 #
 # META.a2ml — Reasonably Good Token Vault meta-level information
 [metadata]
-version = "0.1.0"
-last-updated = "2026-02-08"
+version = "0.2.0"
+last-updated = "2026-04-12"
 
 [project-info]
 license = "PMPL-1.0-or-later"
@@ -12,13 +12,44 @@ author = "Jonathan D.A. Jewell (hyperpolymath)"
 
 [architecture-decisions]
 decisions = [
-  # No ADRs recorded
+  { id = "ADR-001", title = "Cloudflare Workers as production target (not Fly.io)", status = "accepted", date = "2026-04-12",
+    context = "RGTV needs a production deployment reachable by external LLM agents without VPN or private network access.",
+    decision = "Cloudflare Workers (vault-worker, Rust/WASM via workers-rs 0.8) is the production deployment target.",
+    rationale = "CF Workers: globally distributed, no cold starts, native DO support, zero-infra ops. Fly.io (vault-broker, axum) retained for internal flycast spot-testing only.",
+    consequences = "vault-worker must remain API-compatible with vault-broker. Both implement identical HTTP routes." },
+
+  { id = "ADR-002", title = "Durable Objects for grant state (not KV)", status = "accepted", date = "2026-04-12",
+    context = "Cloudflare KV has no atomic read+delete operation. Two simultaneous redeem requests for the same grant could both succeed.",
+    decision = "Each outstanding grant is stored in its own GrantObject Durable Object instance, keyed by grant_id UUID.",
+    rationale = "DO instances are single-threaded: the Workers runtime serialises concurrent fetches to the same instance. The check-and-delete in the POST handler is therefore a true atomic operation.",
+    consequences = "GRANTS KV namespace removed from wrangler.toml. Durable Objects migrations block required. Each grant creates one DO instance." },
+
+  { id = "ADR-003", title = "axum + tokio for vault-broker (local/test server)", status = "accepted", date = "2026-04-11",
+    context = "vault-broker serves as the spot-test target on Fly.io and for local dev with `just broker-dev`.",
+    decision = "axum 0.7 on tokio, IPv6 dual-stack, Zeroizing<String> for all credential values.",
+    rationale = "Idiomatic async Rust for HTTP; Zeroizing scrubs heap on drop; axum router matches vault-worker's route surface identically so the rgtv CLI works against both.",
+    consequences = "vault-broker holds credentials in-process (Arc<Mutex<HashMap>>); not suitable for multi-node production — CF Workers is." },
+
+  { id = "ADR-004", title = "rgtv CLI (formerly svalinn-cli) wired to HTTP API", status = "accepted", date = "2026-04-12",
+    context = "The CLI binary was named svalinn_cli and was a skeleton not wired to vault-broker.",
+    decision = "Renamed to rgtv binary. Full rewrite using ureq 2 (sync HTTP) + Zeroizing<String>. Works against both vault-broker and vault-worker.",
+    rationale = "Single synchronous binary; no async runtime needed for CLI; ureq is minimal.",
+    consequences = "svalinn-cli crate name kept for Cargo workspace; only the binary name changed." },
+
+  { id = "ADR-005", title = "Bearer token auth (RGTV_AGENT_TOKEN) as sole auth mechanism", status = "accepted", date = "2026-04-11",
+    context = "LLM agents need a simple, stateless auth mechanism compatible with both vault-broker and vault-worker.",
+    decision = "Single shared secret (RGTV_AGENT_TOKEN) passed as Authorization: Bearer header. Worker Secret on CF side; env var on Fly.io side.",
+    rationale = "Simple, stateless, zero-dependency. Rate limiting per agent token is a future concern (see blockers in STATE.a2ml).",
+    consequences = "All tokens share the same privilege level. Per-agent tokens are a future enhancement." },
 ]
 
 [development-practices]
 versioning = "SemVer"
 documentation = "AsciiDoc"
 build-tool = "just"
+rust-edition = "2021"
+wasm-target = "wasm32-unknown-unknown"
+worker-build = "worker-build (cargo install worker-build)"
 
 [maintenance-axes]
 scoping-first = true

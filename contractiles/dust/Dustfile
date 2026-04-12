@@ -1,29 +1,22 @@
-# SPDX-License-Identifier: PLMP-1.0-or-later
-# Dustfile template - recovery and rollback semantics
+# SPDX-License-Identifier: PMPL-1.0-or-later
+# Dustfile — recovery and rollback semantics for RGTV
 
 version: 1
 
 recovery:
-  logs:
-    - name: decision-log
-      path: logs/decisions.json
-      reversible: true
-      handler: "log-replay --reverse logs/decisions.json"
+  worker-deploy:
+    - name: wrangler-rollback
+      notes: "CF Workers keeps the previous deployment. Roll back via Cloudflare dashboard → Workers → rgtv-vault → Deployments → Rollback."
 
-  policy:
-    - name: policy-rollback
-      path: policy/policy.ncl
-      rollback: "git checkout HEAD~1 -- policy/policy.ncl"
-      notes: "Rollback policy to the previous known-good revision."
+  credentials-kv:
+    - name: restore-credential
+      notes: "If a credential value is corrupted or deleted, re-add it: just worker-cred-put HINT value"
 
-  gateway:
-    - name: bad-deployment
-      event: "deploy.failure"
-      undo: "kubectl rollout undo deployment/gateway"
-      notes: "Undo a failed deployment while preserving audit logs."
+  agent-token:
+    - name: rotate-token
+      notes: "If RGTV_AGENT_TOKEN is compromised: wrangler secret put RGTV_AGENT_TOKEN (new value), then update all consumers."
 
-  dust-events:
-    - name: decision-log-to-dust
-      source: logs/decisions.json
-      transform: "dustify --input logs/decisions.json --output logs/dust-events.json"
-      notes: "Map gateway decision logs into reversible dust events."
+  fly-broker:
+    - name: redeploy-broker
+      notes: "If rgtv-nesy is degraded: NESY_INGEST_TOKEN=<tok> ./deploy-fly.sh rgtv"
+      rollback: "fly releases -a rgtv-nesy && fly deploy --image <previous-image>"

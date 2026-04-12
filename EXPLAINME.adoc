@@ -3,32 +3,136 @@
 :toc:
 :icons: font
 
-The README makes claims. This file backs them up.
+The README makes claims about zero-trust credential brokering. This file backs them up
+with architecture decisions and technology choices.
 
-[quote, README]
-____
-This project must declare **MPL-2.0-or-later** for platform/tooling compatibility.
-____
+== Why This Exists
+
+LLM agents must not see raw credential values. A model that has processed a token string
+has potentially leaked it — to logs, context windows, fine-tuning data, or caches.
+RGTV gives agents _opaque one-use grants_ (UUID v4). The agent passes the grant to the
+target service; the target service redeems it for the real value. The value is
+`Zeroizing<String>` in every Rust component — it is scrubbed from heap on drop.
 
 == Technology Choices
 
-[cols="1,2"]
+[cols="1,3"]
 |===
-| Technology | Learn More
+| Technology | Rationale
 
-| **Zig** | https://ziglang.org
+| **Rust** | Memory safety without GC. `Zeroizing<String>` from the `zeroize` crate scrubs
+credential values from heap on drop. Credential hygiene is the whole point.
+
+| **workers-rs 0.8** | The Cloudflare Workers Rust SDK. Compiles Rust to WASM for the
+`wasm32-unknown-unknown` target. vault-worker is `crate-type = ["cdylib"]`; `worker-build`
+produces the JS shim that CF Workers loads.
+
+| **Cloudflare Durable Objects** | KV has no atomic read+delete. Two simultaneous
+redeem requests for the same grant could both succeed under KV. Durable Object instances
+are single-threaded: the Workers runtime serialises concurrent fetches to the same
+instance. The check-and-delete in the redeem handler is therefore a true atomic
+operation — the second request sees the key gone when it starts.
+
+| **Cloudflare KV (CREDENTIALS)** | Operator-managed hint→value store. Hints are opaque
+names (`NESY_INGEST_TOKEN`, `FLY_API_TOKEN`, etc.). Raw values are stored once by a human
+operator via `just worker-cred-put`; agents never see them.
+
+| **axum 0.7** | Used by vault-broker (the Fly.io spot-test server). Async Rust HTTP;
+identical route surface to vault-worker so the `rgtv` CLI works against both.
+
+| **ureq 2** | Synchronous HTTP client for the `rgtv` CLI. No async runtime needed
+for a CLI tool; ureq is minimal.
+
+| **UUID v4** | Grant identifiers. Cryptographically random; 122 bits of entropy.
+In WASM, the `js` feature makes uuid use `Math.random()` (WASM has no `getrandom`
+syscall); the entropy source is the JS runtime.
 |===
 
 == File Map
 
-[cols="1,2"]
+[cols="1,3"]
 |===
 | Path | What's There
 
-| `src/` | Source code
-| `ffi/` | Foreign function interface
-| `test(s)/` | Test suite
+| `vault-broker/` | Axum HTTP server. Spot-test / Fly.io target. In-memory credential store.
+| `vault-worker/` | Cloudflare Workers production target. Rust→WASM. Durable Objects for grant state.
+| `svalinn-cli/` | `rgtv` CLI binary. Wired to vault-broker/vault-worker HTTP API.
+| `vault-core/` | Crypto library crate (Zeroizing store). Used by vault-broker.
+| `contractiles/` | Mustfile (invariant checks), Dustfile (recovery), Intentfile (future intent).
+| `.machine_readable/6a2/` | STATE, META, ECOSYSTEM, AGENTIC, NEUROSYM, PLAYBOOK a2ml files.
+| `Justfile` | All build, deploy, and operational targets.
 |===
+
+== Grant Lifecycle
+
+[source]
+----
+Agent                     vault-worker (CF Workers)              CREDENTIALS KV
+  |                              |                                     |
+  |  POST /v1/grants             |                                     |
+  |  { "hint": "MY_TOKEN" }      |                                     |
+  |----------------------------->|                                     |
+  |                              |  kv.get("MY_TOKEN")                 |
+  |                              |------------------------------------>|
+  |                              |<---- value (validates hint exists) -|
+  |                              |                                     |
+  |                              |  DO.id_from_name(grant_id)          |
+  |                              |  stub.PUT { hint, expires_at }      |
+  |                              |  (stored in GrantObject DO storage) |
+  |                              |                                     |
+  |  201 { grant_id, expires_in_secs }                                 |
+  |<-----------------------------|                                     |
+  |                              |                                     |
+  |  POST /v1/grants/:id/redeem  |                                     |
+  |----------------------------->|                                     |
+  |                              |  DO.id_from_name(grant_id)          |
+  |                              |  stub.POST (atomic read+delete)     |
+  |                              |  -> Ok(Some(record)) → delete       |
+  |                              |     expiry check                    |
+  |                              |  -> Ok(None) → 404 (already gone)   |
+  |                              |                                     |
+  |                              |  kv.get(hint)                       |
+  |                              |------------------------------------>|
+  |                              |<----------- raw value --------------|
+  |                              |                                     |
+  |  200 { hint, value }         |                                     |
+  |<-----------------------------|                                     |
+----
+
+The grant is deleted from DO storage _before_ expiry is checked. An expired grant
+is consumed and gone — it cannot be retried.
+
+== One-Use Guarantee
+
+The guarantee is enforced by the Durable Objects runtime, not by application-level locks.
+
+A `GrantObject` DO instance owns exactly one grant record. Because the Workers runtime
+serialises all fetches to a given instance, no two POST (redeem) requests can interleave.
+The first sees the record and deletes it. The second sees no record and gets 404.
+No mutexes, no CAS, no compare-and-swap — structural concurrency.
+
+== Deployment
+
+=== Production (Cloudflare Workers)
+
+[source,shell]
+----
+# One-time setup
+wrangler kv:namespace create CREDENTIALS
+# → paste id + preview_id into vault-worker/wrangler.toml
+wrangler secret put RGTV_AGENT_TOKEN
+just worker-cred-put NESY_INGEST_TOKEN "the-actual-value"
+
+# Deploy (DO migration runs automatically on first deploy)
+just worker-deploy
+----
+
+=== Spot-test (Fly.io, internal only)
+
+[source,shell]
+----
+NESY_INGEST_TOKEN=<tok> ./deploy-fly.sh rgtv
+----
 
 == Questions?
 

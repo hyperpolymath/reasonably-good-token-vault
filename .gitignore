@@ -10,10 +10,19 @@ Thumbs.db
 .idea/
 .vscode/
 
-# Build
+# Rust — per-crate target directories (root /target/ is root-anchored, won't match subdirs)
 /target/
+vault-broker/target/
+vault-core/target/
+svalinn-cli/target/
+vault-worker/target/
+
+# Cloudflare Workers build artefacts
+vault-worker/build/
+.wrangler/
+
+# Build
 /_build/
-/build/
 /dist/
 /out/
 
@@ -21,9 +30,6 @@ Thumbs.db
 /node_modules/
 /vendor/
 /deps/
-
-# Rust
-# Cargo.lock  # Keep for binaries
 
 # Secrets
 .env

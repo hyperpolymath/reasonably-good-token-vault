@@ -1,21 +1,29 @@
-# SPDX-License-Identifier: PLMP-1.0-or-later
-# Intentfile template - declared future intent
+# SPDX-License-Identifier: PMPL-1.0-or-later
+# Intentfile — declared future intent for RGTV
 
 version: 1
 
 future:
-  trust-engine:
-    - "Integrate hardware-backed key management."
-    - "Support node attestation for deployments."
+  security:
+    - "Encrypt CREDENTIALS KV values with RGTV_MASTER_KEY Worker Secret (AES-256-GCM)."
+    - "Add honeypot endpoint — canary that logs any access attempt, alerting on credential sniffing."
+    - "Rate limiting per RGTV_AGENT_TOKEN (CF Workers rate limiting API)."
+    - "Production key rotation — RGTV_AGENT_TOKEN hot-reload without redeploy."
 
-  control-plane:
-    - "Move to GitOps-backed configuration promotion."
-    - "Add canary and staged rollout support."
+  audit:
+    - "Wire grant/redeem/honeypot events to VeriSimDB audit feed."
+    - "Implement rgtv audit subcommand (currently an honest stub)."
+    - "Implement rgtv rotate subcommand (currently an honest stub)."
 
-  pipeline:
-    - "Adopt Nickel (or your DSL) as the primary policy language."
-    - "Automate policy promotion from dev to prod with signed artifacts."
+  formal-verification:
+    - "Idris2 ABI proofs for grant lifecycle invariants (issued → redeemed → expired)."
+    - "Zig FFI layer exposing C-compatible vault_grant / vault_redeem for non-Rust consumers."
 
-  introspection:
-    - "Expose decision latency and policy evaluation metrics."
-    - "Add tracing for end-to-end request decisions."
+  consumers:
+    - "Wire hypatia to use RGTV for scan credentials."
+    - "Wire gitbot-fleet to fetch GitHub tokens via RGTV."
+    - "Wire 007 agent toolchain to RGTV."
+
+  infrastructure:
+    - "Migrate Containerfile from debian:bookworm-slim to Chainguard base (builder + static runtime)."
+    - "Custom domain for CF Workers rgtv-vault (currently on workers.dev subdomain)."
