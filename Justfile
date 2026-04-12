@@ -1,31 +1,84 @@
 # SPDX-License-Identifier: PMPL-1.0-or-later
-# justfile for vex-SATELLITE_NAME
+# justfile for reasonably-good-token-vault
 
 set shell := ["bash", "-uc"]
 
 default:
     @just --list
 
-# Build the project
+# Build vault-broker and rgtv CLI
 build:
-    cargo build --release
+    cargo build --manifest-path vault-broker/Cargo.toml --release
+    cargo build --manifest-path svalinn-cli/Cargo.toml --release
 
-# Run tests
+# Build vault-broker only
+build-broker:
+    cargo build --manifest-path vault-broker/Cargo.toml --release
+
+# Build rgtv CLI only
+build-cli:
+    cargo build --manifest-path svalinn-cli/Cargo.toml --release
+
+# Build vault-core crypto library
+build-core:
+    cargo build --manifest-path vault-core/Cargo.toml --release
+
+# Run tests for all Rust crates
 test:
-    cargo test
+    cargo test --manifest-path vault-broker/Cargo.toml
+    cargo test --manifest-path svalinn-cli/Cargo.toml
+    cargo test --manifest-path vault-core/Cargo.toml
 
-# Run checks (clippy + fmt)
+# Run clippy + fmt check for all Rust crates
 check:
-    cargo fmt --check
-    cargo clippy -- -D warnings
+    cargo fmt --manifest-path vault-broker/Cargo.toml --check
+    cargo clippy --manifest-path vault-broker/Cargo.toml -- -D warnings
+    cargo fmt --manifest-path svalinn-cli/Cargo.toml --check
+    cargo clippy --manifest-path svalinn-cli/Cargo.toml -- -D warnings
 
-# Format code
+# Format all Rust source
 fmt:
-    cargo fmt
+    cargo fmt --manifest-path vault-broker/Cargo.toml
+    cargo fmt --manifest-path svalinn-cli/Cargo.toml
 
-# Clean build artifacts
+# Clean all build artefacts
 clean:
-    cargo clean
+    cargo clean --manifest-path vault-broker/Cargo.toml
+    cargo clean --manifest-path svalinn-cli/Cargo.toml
+    cargo clean --manifest-path vault-core/Cargo.toml
+
+# ---------------------------------------------------------------------------
+# Operational: daemon + CLI
+# ---------------------------------------------------------------------------
+
+# Start vault-broker daemon in the background (requires RGTV_AGENT_TOKEN +
+# RGTV_CRED_* env vars to be set in the calling shell).
+broker-start:
+    @echo "Starting vault-broker daemon..."
+    @rgtv daemon start
+
+# Stop the running vault-broker daemon.
+broker-stop:
+    @rgtv daemon stop
+
+# Report daemon health.
+broker-status:
+    @rgtv daemon status
+
+# Tail the daemon log (follow mode).
+broker-logs:
+    @tail -f ~/.local/state/rgtv/vault-broker.log
+
+# List the credential hints registered with the running broker.
+creds:
+    @rgtv list
+
+# Run vault-broker in the foreground (dev mode, logs to stdout).
+# Requires: RGTV_AGENT_TOKEN + one or more RGTV_CRED_<HINT> vars.
+broker-dev:
+    @echo "Starting vault-broker in foreground (dev mode)..."
+    @echo "Required: RGTV_AGENT_TOKEN, RGTV_CRED_<HINT>=<value>"
+    cargo run --manifest-path vault-broker/Cargo.toml
 
 # Generate vexometer traces
 trace input:

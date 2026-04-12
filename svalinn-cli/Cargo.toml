@@ -1,19 +1,24 @@
 # SPDX-License-Identifier: PMPL-1.0-or-later
 [package]
-name = "svalinn-cli"
+name = "rgtv"
 version = "0.1.0"
 edition = "2021"
 license = "PMPL-1.0-or-later"
-description = "CLI for the Reasonably Good Token Vault (RGTV)"
+description = "rgtv — Reasonably Good Token Vault CLI (client for vault-broker)"
 authors = ["Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>"]
+repository = "https://github.com/hyperpolymath/reasonably-good-token-vault"
 
 [[bin]]
-name = "svalinn_cli"
+name = "rgtv"
 path = "src/main.rs"
 
 [dependencies]
+# Synchronous HTTP client — no async overhead needed for a CLI.
+ureq = { version = "2", features = ["json"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
+# Zeroize heap allocations holding raw credential values after use.
+zeroize = { version = "1.7", features = ["derive"] }
 
 [profile.release]
 lto = true

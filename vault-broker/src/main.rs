@@ -43,7 +43,6 @@ use axum::{
     routing::{get, post},
     Json, Router,
 };
-use chrono::Utc;
 use serde::{Deserialize, Serialize};
 use tracing::{info, warn};
 use uuid::Uuid;
@@ -111,6 +110,13 @@ struct HealthResponse {
 }
 
 #[derive(Serialize)]
+struct CredentialsResponse {
+    /// Sorted list of registered hint names — no credential values.
+    hints: Vec<String>,
+    count: usize,
+}
+
+#[derive(Serialize)]
 struct ErrorResponse {
     error: String,
 }
@@ -165,6 +171,23 @@ fn authenticate(headers: &HeaderMap, agent_token: &str) -> Result<(), StatusCode
 // ---------------------------------------------------------------------------
 // Handlers
 // ---------------------------------------------------------------------------
+
+/// GET /v1/credentials
+/// Returns the sorted list of registered hint names.  No credential values
+/// are included — callers discover *what* is available without learning *what
+/// the values are*.  Requires the same bearer token as all other endpoints.
+async fn list_credentials(
+    State(state): State<SharedState>,
+    headers: HeaderMap,
+) -> impl IntoResponse {
+    if let Err(code) = authenticate(&headers, &state.agent_token) {
+        return (code, Json(ErrorResponse { error: "unauthorized".into() })).into_response();
+    }
+    let mut hints: Vec<String> = state.credentials.keys().cloned().collect();
+    hints.sort();
+    let count = hints.len();
+    Json(CredentialsResponse { hints, count }).into_response()
+}
 
 async fn health(State(state): State<SharedState>) -> impl IntoResponse {
     let cred_count = state.credentials.len();
@@ -303,10 +326,11 @@ async fn redeem_grant(
     info!(%grant_id, %hint, "grant redeemed — value delivered, grant dropped");
 
     // Serialize immediately so we can zeroize the local copy.
+    // Deref through Zeroizing to get the inner String.
     let mut zeroized_value = Zeroizing::new(value);
     let response = Json(RedeemResponse {
         hint,
-        value: zeroized_value.clone(),
+        value: zeroized_value.as_str().to_string(),
     });
     zeroized_value.zeroize();
     response.into_response()
@@ -323,7 +347,6 @@ async fn main() {
             tracing_subscriber::EnvFilter::try_from_default_env()
                 .unwrap_or_else(|_| "vault_broker=info,tower_http=warn".parse().unwrap()),
         )
-        .json()
         .init();
 
     let agent_token = Zeroizing::new(
@@ -353,6 +376,7 @@ async fn main() {
 
     let app = Router::new()
         .route("/health", get(health))
+        .route("/v1/credentials", get(list_credentials))
         .route("/v1/grants", post(create_grant))
         .route("/v1/grants/:grant_id/redeem", post(redeem_grant))
         .with_state(state);
