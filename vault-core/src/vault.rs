@@ -651,13 +651,13 @@ mod tests {
 
     #[test]
     fn test_vault_create_and_unlock() {
-        let mut vault = Vault::create("test-vault", TEST_PASSWORD).unwrap();
+        let mut vault = Vault::create("test-vault", TEST_PASSWORD).expect("TODO: handle error");
 
         assert_eq!(vault.state, VaultState::Locked);
 
         // Unlock should work
         vault.config.require_mfa = false;
-        vault.unlock(TEST_PASSWORD).unwrap();
+        vault.unlock(TEST_PASSWORD).expect("TODO: handle error");
         assert_eq!(vault.state, VaultState::Unlocked);
 
         // Lock and verify
@@ -667,7 +667,7 @@ mod tests {
 
     #[test]
     fn test_vault_wrong_password() {
-        let mut vault = Vault::create("test-vault", TEST_PASSWORD).unwrap();
+        let mut vault = Vault::create("test-vault", TEST_PASSWORD).expect("TODO: handle error");
         vault.config.require_mfa = false;
 
         assert!(vault.unlock(b"wrongpassword-dynamic-999").is_err());
@@ -675,9 +675,9 @@ mod tests {
 
     #[test]
     fn test_vault_identity_management() {
-        let mut vault = Vault::create("test-vault", TEST_PASSWORD).unwrap();
+        let mut vault = Vault::create("test-vault", TEST_PASSWORD).expect("TODO: handle error");
         vault.config.require_mfa = false;
-        vault.unlock(TEST_PASSWORD).unwrap();
+        vault.unlock(TEST_PASSWORD).expect("TODO: handle error");
 
         let identity = Identity::new(
             "test-ssh".to_string(),
@@ -686,10 +686,10 @@ mod tests {
             None,
         );
 
-        let id = vault.add_identity(identity).unwrap();
+        let id = vault.add_identity(identity).expect("TODO: handle error");
         assert!(vault.get_identity(&id).is_ok());
 
-        vault.remove_identity(&id).unwrap();
+        vault.remove_identity(&id).expect("TODO: handle error");
         assert!(vault.get_identity(&id).is_err());
     }
 }

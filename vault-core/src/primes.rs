@@ -24,10 +24,10 @@ pub struct PrimeVerifier;
 impl PrimeVerifier {
     /// Verify if a number is prime using Miller-Rabin with 64+ rounds
     pub fn is_prime(n: &BigUint) -> bool {
-        if n <= &1u32.to_biguint().unwrap() {
+        if n <= &1u32.to_biguint().expect("TODO: handle error") {
             return false;
         }
-        if n == &2u32.to_biguint().unwrap() || n == &3u32.to_biguint().unwrap() {
+        if n == &2u32.to_biguint().expect("TODO: handle error") || n == &3u32.to_biguint().expect("TODO: handle error") {
             return true;
         }
         if n.is_even() {
@@ -40,7 +40,7 @@ impl PrimeVerifier {
     /// Miller-Rabin primality test
     fn miller_rabin(n: &BigUint, rounds: usize) -> bool {
         let one = BigUint::one();
-        let two = 2u32.to_biguint().unwrap();
+        let two = 2u32.to_biguint().expect("TODO: handle error");
         let n_minus_one = n - &one;
         let n_minus_two = n - &two;
 
@@ -103,7 +103,7 @@ impl PrimeVerifier {
         ];
 
         for p in &small_primes {
-            let big_p = p.to_biguint().unwrap();
+            let big_p = p.to_biguint().expect("TODO: handle error");
             if n == &big_p {
                 return Ok(true);
             }
@@ -127,7 +127,7 @@ impl PrimeVerifier {
         }
 
         let one = BigUint::one();
-        let two = 2u32.to_biguint().unwrap();
+        let two = 2u32.to_biguint().expect("TODO: handle error");
 
         // Check Sophie Germain condition: (p-1)/2 is prime
         let p_minus_one = p - &one;
@@ -150,7 +150,7 @@ impl PrimeVerifier {
         for _ in 0..max_attempts {
             // Generate a random Sophie Germain prime
             let q = Self::generate_random_prime(&mut rng, bits - 1)?;
-            let two = 2u32.to_biguint().unwrap();
+            let two = 2u32.to_biguint().expect("TODO: handle error");
             let p = &q * &two + BigUint::one();
 
             if Self::is_prime(&p) && Self::is_strong_prime(&p) {
@@ -219,7 +219,7 @@ impl SafePrimes {
     pub fn generate(bits: usize) -> VaultResult<BigUint> {
         let mut rng = OsRng;
         let max_attempts = 50000;
-        let two = 2u32.to_biguint().unwrap();
+        let two = 2u32.to_biguint().expect("TODO: handle error");
 
         for _ in 0..max_attempts {
             // First generate q prime, then check if 2q+1 is prime
@@ -241,7 +241,7 @@ impl SafePrimes {
         }
 
         let one = BigUint::one();
-        let two = 2u32.to_biguint().unwrap();
+        let two = 2u32.to_biguint().expect("TODO: handle error");
         let q = (p - &one) / &two;
 
         PrimeVerifier::is_prime(&q)
@@ -254,15 +254,15 @@ mod tests {
 
     #[test]
     fn test_is_prime_small() {
-        assert!(!PrimeVerifier::is_prime(&0u32.to_biguint().unwrap()));
-        assert!(!PrimeVerifier::is_prime(&1u32.to_biguint().unwrap()));
-        assert!(PrimeVerifier::is_prime(&2u32.to_biguint().unwrap()));
-        assert!(PrimeVerifier::is_prime(&3u32.to_biguint().unwrap()));
-        assert!(!PrimeVerifier::is_prime(&4u32.to_biguint().unwrap()));
-        assert!(PrimeVerifier::is_prime(&5u32.to_biguint().unwrap()));
-        assert!(PrimeVerifier::is_prime(&7u32.to_biguint().unwrap()));
-        assert!(!PrimeVerifier::is_prime(&9u32.to_biguint().unwrap()));
-        assert!(PrimeVerifier::is_prime(&11u32.to_biguint().unwrap()));
+        assert!(!PrimeVerifier::is_prime(&0u32.to_biguint().expect("TODO: handle error")));
+        assert!(!PrimeVerifier::is_prime(&1u32.to_biguint().expect("TODO: handle error")));
+        assert!(PrimeVerifier::is_prime(&2u32.to_biguint().expect("TODO: handle error")));
+        assert!(PrimeVerifier::is_prime(&3u32.to_biguint().expect("TODO: handle error")));
+        assert!(!PrimeVerifier::is_prime(&4u32.to_biguint().expect("TODO: handle error")));
+        assert!(PrimeVerifier::is_prime(&5u32.to_biguint().expect("TODO: handle error")));
+        assert!(PrimeVerifier::is_prime(&7u32.to_biguint().expect("TODO: handle error")));
+        assert!(!PrimeVerifier::is_prime(&9u32.to_biguint().expect("TODO: handle error")));
+        assert!(PrimeVerifier::is_prime(&11u32.to_biguint().expect("TODO: handle error")));
     }
 
     #[test]
@@ -279,12 +279,12 @@ mod tests {
     #[test]
     fn test_safe_prime() {
         // 5 is a safe prime (5-1)/2 = 2 is prime
-        assert!(SafePrimes::verify(&5u32.to_biguint().unwrap()));
+        assert!(SafePrimes::verify(&5u32.to_biguint().expect("TODO: handle error")));
 
         // 7 is a safe prime (7-1)/2 = 3 is prime
-        assert!(SafePrimes::verify(&7u32.to_biguint().unwrap()));
+        assert!(SafePrimes::verify(&7u32.to_biguint().expect("TODO: handle error")));
 
         // 11 is a safe prime (11-1)/2 = 5 is prime
-        assert!(SafePrimes::verify(&11u32.to_biguint().unwrap()));
+        assert!(SafePrimes::verify(&11u32.to_biguint().expect("TODO: handle error")));
     }
 }

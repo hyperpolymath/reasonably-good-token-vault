@@ -191,7 +191,7 @@ async fn list_credentials(
 
 async fn health(State(state): State<SharedState>) -> impl IntoResponse {
     let cred_count = state.credentials.len();
-    let grants_active = state.grants.lock().unwrap().len();
+    let grants_active = state.grants.lock().expect("TODO: handle error").len();
     info!(cred_count, grants_active, "health check");
     Json(HealthResponse {
         status: "ok",
@@ -228,7 +228,7 @@ async fn create_grant(
     let expires_at = SystemTime::now() + state.grant_ttl;
 
     {
-        let mut grants = state.grants.lock().unwrap();
+        let mut grants = state.grants.lock().expect("TODO: handle error");
 
         // Purge expired grants to keep memory tidy.
         let now = SystemTime::now();
@@ -272,7 +272,7 @@ async fn redeem_grant(
 
     // Retrieve and immediately remove the grant.
     let hint = {
-        let mut grants = state.grants.lock().unwrap();
+        let mut grants = state.grants.lock().expect("TODO: handle error");
         match grants.remove(&grant_id) {
             None => {
                 warn!(%grant_id, "redeem: grant not found or already redeemed");
@@ -345,7 +345,7 @@ async fn main() {
     tracing_subscriber::fmt()
         .with_env_filter(
             tracing_subscriber::EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| "vault_broker=info,tower_http=warn".parse().unwrap()),
+                .unwrap_or_else(|_| "vault_broker=info,tower_http=warn".parse().expect("TODO: handle error")),
         )
         .init();
 
@@ -384,6 +384,6 @@ async fn main() {
     let addr = SocketAddr::from(([0, 0, 0, 0, 0, 0, 0, 0], port));
     info!(%addr, grant_ttl_secs, "vault-broker starting");
 
-    let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
-    axum::serve(listener, app).await.unwrap();
+    let listener = tokio::net::TcpListener::bind(addr).await.expect("TODO: handle error");
+    axum::serve(listener, app).await.expect("TODO: handle error");
 }

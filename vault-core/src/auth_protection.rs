@@ -468,7 +468,7 @@ mod tests {
         let mut limiter = LoginRateLimiter::new(RateLimitConfig::default());
         let ip_hash = Blake3Hasher::hash(b"test-ip");
 
-        match limiter.check_attempt(ip_hash).unwrap() {
+        match limiter.check_attempt(ip_hash).expect("TODO: handle error") {
             LoginCheckResult::Allowed => (),
             _ => panic!("First attempt should be allowed"),
         }
@@ -490,7 +490,7 @@ mod tests {
             timing_analysis: TimingMetrics::default(),
         });
 
-        match limiter.check_attempt(ip_hash).unwrap() {
+        match limiter.check_attempt(ip_hash).expect("TODO: handle error") {
             LoginCheckResult::DelayRequired { delay_ms } => {
                 assert!(delay_ms > 0);
             }

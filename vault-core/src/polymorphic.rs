@@ -223,7 +223,7 @@ impl PolymorphicData {
                 // Reconstruct index map
                 let indices: Vec<usize> = map_bytes
                     .chunks_exact(4)
-                    .map(|b| u32::from_le_bytes(b.try_into().unwrap()) as usize)
+                    .map(|b| u32::from_le_bytes(b.try_into().expect("TODO: handle error")) as usize)
                     .collect();
 
                 // Reverse shuffle
@@ -344,11 +344,11 @@ mod tests {
         let data = b"secret vault data that needs protection";
         let key = b"encryption-key-for-transforms";
 
-        let transformed = PolymorphicData::transform(data, key).unwrap();
+        let transformed = PolymorphicData::transform(data, key).expect("TODO: handle error");
         assert!(!transformed.data.is_empty());
         assert!(!transformed.transformations.is_empty());
 
-        let recovered = transformed.untransform().unwrap();
+        let recovered = transformed.untransform().expect("TODO: handle error");
         assert_eq!(data.to_vec(), recovered);
     }
 
@@ -370,16 +370,16 @@ mod tests {
         let key1 = b"key-generation-1";
         let key2 = b"key-generation-2";
 
-        let mut poly = PolymorphicData::transform(data, key1).unwrap();
+        let mut poly = PolymorphicData::transform(data, key1).expect("TODO: handle error");
         assert_eq!(poly.generation, 1);
 
         let original_transforms = poly.transformations.len();
 
-        poly.evolve(key2).unwrap();
+        poly.evolve(key2).expect("TODO: handle error");
         assert_eq!(poly.generation, 2);
 
         // Should still recover original data
-        let recovered = poly.untransform().unwrap();
+        let recovered = poly.untransform().expect("TODO: handle error");
         assert_eq!(data.to_vec(), recovered);
     }
 }

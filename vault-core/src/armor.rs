@@ -275,33 +275,33 @@ mod tests {
     #[test]
     fn test_armor_roundtrip() {
         let data = b"test secret data";
-        let armored = ArmoredPayload::encode(data, "TEST").unwrap();
-        let decoded = armored.decode().unwrap();
+        let armored = ArmoredPayload::encode(data, "TEST").expect("TODO: handle error");
+        let decoded = armored.decode().expect("TODO: handle error");
         assert_eq!(data.to_vec(), decoded);
     }
 
     #[test]
     fn test_armor_pem_format() {
         let data = b"test secret data";
-        let armored = ArmoredPayload::encode(data, "TEST DATA").unwrap();
+        let armored = ArmoredPayload::encode(data, "TEST DATA").expect("TODO: handle error");
 
         let pem = armored.to_pem();
         assert!(pem.contains("-----BEGIN TEST DATA-----"));
         assert!(pem.contains("-----END TEST DATA-----"));
 
-        let parsed = ArmoredPayload::from_pem(&pem).unwrap();
-        let decoded = parsed.decode().unwrap();
+        let parsed = ArmoredPayload::from_pem(&pem).expect("TODO: handle error");
+        let decoded = parsed.decode().expect("TODO: handle error");
         assert_eq!(data.to_vec(), decoded);
     }
 
     #[test]
     fn test_multi_layer_armor() {
         let data = b"sensitive vault data";
-        let armored = MultiLayerArmor::full_armor(data, "VAULT").unwrap();
+        let armored = MultiLayerArmor::full_armor(data, "VAULT").expect("TODO: handle error");
 
         assert_eq!(armored.layers.len(), 3);
 
-        let decoded = armored.decode().unwrap();
+        let decoded = armored.decode().expect("TODO: handle error");
         assert_eq!(data.to_vec(), decoded);
     }
 }

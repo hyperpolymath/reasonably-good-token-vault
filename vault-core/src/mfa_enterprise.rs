@@ -620,7 +620,7 @@ mod tests {
     #[test]
     fn test_totp_enrollment() {
         let mut mfa = MFAChannel::new(CompliancePreset::NIST_AAL2.settings());
-        let enrollment = mfa.enroll_totp("test-user").unwrap();
+        let enrollment = mfa.enroll_totp("test-user").expect("TODO: handle error");
         
         assert!(!enrollment.secret.is_empty());
         assert!(!enrollment.qr_code.is_empty());
@@ -630,9 +630,9 @@ mod tests {
     #[test]
     fn test_compliance_check() {
         let mut mfa = MFAChannel::new(CompliancePreset::NIST_AAL2.settings());
-        mfa.enroll_totp("test-user").unwrap();
+        mfa.enroll_totp("test-user").expect("TODO: handle error");
         
-        let status = mfa.check_compliance("test-user").unwrap();
+        let status = mfa.check_compliance("test-user").expect("TODO: handle error");
         assert!(status.is_compliant());
         assert_eq!(status.enrolled_factors, 1);
     }
@@ -640,7 +640,7 @@ mod tests {
     #[test]
     fn test_audit_logging() {
         let mut mfa = MFAChannel::new(CompliancePreset::NIST_AAL2.settings());
-        mfa.enroll_totp("test-user").unwrap();
+        mfa.enroll_totp("test-user").expect("TODO: handle error");
         
         assert_eq!(mfa.get_audit_log().len(), 1);
         assert_eq!(mfa.get_audit_log()[0].event_type, MFAEventType::Enrollment);

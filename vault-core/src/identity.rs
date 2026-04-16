@@ -435,7 +435,7 @@ mod tests {
             None,
         );
 
-        let id = registry.add(identity).unwrap();
+        let id = registry.add(identity).expect("TODO: handle error");
         assert!(registry.get(&id).is_some());
 
         let found = registry.find_by_type(IdentityType::Pat);

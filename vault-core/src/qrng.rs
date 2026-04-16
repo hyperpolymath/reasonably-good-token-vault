@@ -521,7 +521,7 @@ mod tests {
         cache.add(&[1, 2, 3, 4, 5], QrngSource::AnuQuantum);
         assert_eq!(cache.values.len(), 5);
 
-        let values = cache.get(3).unwrap();
+        let values = cache.get(3).expect("TODO: handle error");
         assert_eq!(values, vec![1, 2, 3]);
         assert_eq!(cache.values.len(), 2);
     }
@@ -538,7 +538,7 @@ mod tests {
         assert!(fragments.len() > 4);
 
         // Filter and reassemble
-        let reassembled = manager.reassemble_fragments(&fragments).unwrap();
+        let reassembled = manager.reassemble_fragments(&fragments).expect("TODO: handle error");
         assert_eq!(data.to_vec(), reassembled);
     }
 

@@ -435,7 +435,7 @@ mod tests {
         assert!(session.remaining_secs() > 0);
 
         // Wrong token
-        let wrong_token = SecureKey::new(32).unwrap();
+        let wrong_token = SecureKey::new(32).expect("TODO: handle error");
         assert!(!session.verify(&wrong_token));
     }
 

@@ -415,24 +415,24 @@ mod tests {
 
     #[test]
     fn test_blob_storage() {
-        let key = SecureKey::new(32).unwrap();
+        let key = SecureKey::new(32).expect("TODO: handle error");
         let mut store = ObjectStore::new(key);
 
         let data = b"test data for versioning";
-        let hash = store.store_blob(data).unwrap();
+        let hash = store.store_blob(data).expect("TODO: handle error");
 
         assert!(store.objects.contains_key(&hash));
     }
 
     #[test]
     fn test_fragmented_storage() {
-        let key = SecureKey::new(32).unwrap();
+        let key = SecureKey::new(32).expect("TODO: handle error");
         let mut store = ObjectStore::new(key);
 
         let data = b"test data that will be fragmented for obfuscation";
-        let hash = store.store_fragmented(data, 4).unwrap();
+        let hash = store.store_fragmented(data, 4).expect("TODO: handle error");
 
-        let retrieved = store.retrieve_fragmented(&hash).unwrap();
+        let retrieved = store.retrieve_fragmented(&hash).expect("TODO: handle error");
         assert_eq!(data.to_vec(), retrieved);
     }
 }

@@ -418,7 +418,7 @@ mod tests {
     fn test_argon2_kdf() {
         let kdf = Argon2Kdf::default();
         let salt = Argon2Kdf::generate_salt();
-        let key = kdf.derive(TEST_PASSWORD, &salt).unwrap();
+        let key = kdf.derive(TEST_PASSWORD, &salt).expect("TODO: handle error");
         assert_eq!(key.len(), AES_KEY_SIZE);
     }
 
@@ -436,13 +436,13 @@ mod tests {
 
     #[test]
     fn test_aes_gcm_roundtrip() {
-        let key = SecureKey::new(AES_KEY_SIZE).unwrap();
-        let cipher = AesGcmCipher::new(&key).unwrap();
+        let key = SecureKey::new(AES_KEY_SIZE).expect("TODO: handle error");
+        let cipher = AesGcmCipher::new(&key).expect("TODO: handle error");
         let nonce = AesGcmCipher::generate_nonce();
         let plaintext = b"secret-message-for-testing-purposes-only";
 
-        let ciphertext = cipher.encrypt(&nonce, plaintext).unwrap();
-        let decrypted = cipher.decrypt(&nonce, &ciphertext).unwrap();
+        let ciphertext = cipher.encrypt(&nonce, plaintext).expect("TODO: handle error");
+        let decrypted = cipher.decrypt(&nonce, &ciphertext).expect("TODO: handle error");
 
         assert_eq!(plaintext.to_vec(), decrypted);
     }
@@ -450,8 +450,8 @@ mod tests {
     #[test]
     fn test_kyber1024_kem() {
         let (pk, sk) = Kyber1024Kem::generate_keypair();
-        let (ss1, ct) = Kyber1024Kem::encapsulate(&pk).unwrap();
-        let ss2 = Kyber1024Kem::decapsulate(&sk, &ct).unwrap();
+        let (ss1, ct) = Kyber1024Kem::encapsulate(&pk).expect("TODO: handle error");
+        let ss2 = Kyber1024Kem::decapsulate(&sk, &ct).expect("TODO: handle error");
         assert_eq!(ss1, ss2);
     }
 
@@ -459,18 +459,18 @@ mod tests {
     fn test_dilithium5_sign_verify() {
         let (pk, sk) = Dilithium5Signer::generate_keypair();
         let message = b"test-message-for-hybrid-signing-verification";
-        let sig = Dilithium5Signer::sign(&sk, message).unwrap();
-        assert!(Dilithium5Signer::verify(&pk, message, &sig).unwrap());
+        let sig = Dilithium5Signer::sign(&sk, message).expect("TODO: handle error");
+        assert!(Dilithium5Signer::verify(&pk, message, &sig).expect("TODO: handle error"));
     }
 
     #[test]
     fn test_crypto_envelope_roundtrip() {
         let salt = Argon2Kdf::generate_salt();
-        let envelope = CryptoEnvelope::from_password(TEST_PASSWORD, &salt).unwrap();
+        let envelope = CryptoEnvelope::from_password(TEST_PASSWORD, &salt).expect("TODO: handle error");
         let plaintext = b"secret-data-for-envelope-testing";
 
-        let encrypted = envelope.encrypt(plaintext).unwrap();
-        let decrypted = envelope.decrypt(&encrypted).unwrap();
+        let encrypted = envelope.encrypt(plaintext).expect("TODO: handle error");
+        let decrypted = envelope.decrypt(&encrypted).expect("TODO: handle error");
 
         assert_eq!(plaintext.to_vec(), decrypted);
     }

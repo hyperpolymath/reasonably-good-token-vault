@@ -540,7 +540,7 @@ mod tests {
         let mut manager = PasswordManager::default();
 
         let password = "Str0ng!P@ssw0rd#2024";
-        manager.set_password(password).unwrap();
+        manager.set_password(password).expect("TODO: handle error");
 
         // Same password should fail
         let result = manager.validate(password);

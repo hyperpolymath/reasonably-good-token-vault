@@ -105,7 +105,7 @@ fn handle_create_backup(
     println!("=== Svalinn Vault Backup Creation ===");
     
     // Get backup directory
-    let backup_dir = matches.get_one::<String>("output").unwrap();
+    let backup_dir = matches.get_one::<String>("output").expect("TODO: handle error");
     let backup_dir = PathBuf::from(backup_dir);
     
     // Create backup directory if it doesn't exist
@@ -208,7 +208,7 @@ fn handle_restore_backup(
 ) -> VaultResult<()> {
     println!("=== Svalinn Vault Backup Restore ===");
     
-    let backup_path = PathBuf::from(matches.get_one::<String>("input").unwrap());
+    let backup_path = PathBuf::from(matches.get_one::<String>("input").expect("TODO: handle error"));
     
     if !backup_path.exists() {
         return Err(crate::error::VaultError::BackupFailed(
@@ -264,7 +264,7 @@ fn handle_restore_backup(
 fn handle_list_backups(matches: &clap::ArgMatches) -> VaultResult<()> {
     println!("=== Available Backups ===");
     
-    let backup_dir = matches.get_one::<String>("directory").unwrap();
+    let backup_dir = matches.get_one::<String>("directory").expect("TODO: handle error");
     let backup_dir = PathBuf::from(backup_dir);
     
     if !backup_dir.exists() {
@@ -301,7 +301,7 @@ fn handle_list_backups(matches: &clap::ArgMatches) -> VaultResult<()> {
         let metadata = entry.metadata()?;
         let modified = metadata.modified()?.elapsed()?;
         
-        println!("{}. {}", i + 1, path.file_name().unwrap().to_string_lossy());
+        println!("{}. {}", i + 1, path.file_name().expect("TODO: handle error").to_string_lossy());
         println!("   Size: {} bytes", metadata.len());
         println!("   Created: {} ago", 
             if modified.as_secs() < 60 {
@@ -326,7 +326,7 @@ fn handle_verify_backup(
 ) -> VaultResult<()> {
     println!("=== Backup Verification ===");
     
-    let backup_path = PathBuf::from(matches.get_one::<String>("input").unwrap());
+    let backup_path = PathBuf::from(matches.get_one::<String>("input").expect("TODO: handle error"));
     
     if !backup_path.exists() {
         return Err(crate::error::VaultError::BackupFailed(
@@ -368,7 +368,7 @@ fn handle_verify_backup(
 fn handle_rotate_backups(matches: &clap::ArgMatches) -> VaultResult<()> {
     println!("=== Backup Rotation ===");
     
-    let backup_dir = matches.get_one::<String>("directory").unwrap();
+    let backup_dir = matches.get_one::<String>("directory").expect("TODO: handle error");
     let backup_dir = PathBuf::from(backup_dir);
     
     let keep = matches.get_one::<String>("keep")

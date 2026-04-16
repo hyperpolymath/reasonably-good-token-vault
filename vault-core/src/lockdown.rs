@@ -352,16 +352,16 @@ mod tests {
 
     #[test]
     fn test_lockdown_manager() {
-        let temp = TempDir::new().unwrap();
+        let temp = TempDir::new().expect("TODO: handle error");
         let vault_dir = temp.path().join("vault");
         let config_dir = temp.path().join("config");
         let log_dir = temp.path().join("log");
         let socket_dir = temp.path().join("socket");
 
-        fs::create_dir_all(&vault_dir).unwrap();
-        fs::create_dir_all(&config_dir).unwrap();
-        fs::create_dir_all(&log_dir).unwrap();
-        fs::create_dir_all(&socket_dir).unwrap();
+        fs::create_dir_all(&vault_dir).expect("TODO: handle error");
+        fs::create_dir_all(&config_dir).expect("TODO: handle error");
+        fs::create_dir_all(&log_dir).expect("TODO: handle error");
+        fs::create_dir_all(&socket_dir).expect("TODO: handle error");
 
         let manager = LockdownManager::new(vault_dir, config_dir, log_dir, socket_dir);
 
