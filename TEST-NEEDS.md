@@ -1,32 +1,49 @@
 # TEST-NEEDS.md — reasonably-good-token-vault
 
-## CRG Grade: C — ACHIEVED 2026-04-04
+## CRG Grade: D — as of 2026-04-17 (post Svalinn-prune)
+
+Previous C grade was against the now-deleted Svalinn/ATS2 code. The RGTV
+shipping crates have no automated tests, so the honest grade is D.
 
 ## Current Test State
 
-| Category | Count | Notes |
-|----------|-------|-------|
-| ATS2 unit tests | 2 | `vault-core-ats/tests/{test_crypto,test_identity}.dats` |
-| Zig FFI tests | 1 | `vault-core-ats/zig/tests/crypto_test.zig` |
-| Specification tests | Present | `validation/echidna-spec.sol` |
-| RPM/Packaging specs | Present | Packaging test configurations |
+| Category           | Count | Notes                                    |
+|--------------------|-------|------------------------------------------|
+| Rust unit tests    | 0     | None in any shipping crate               |
+| Integration tests  | 0     |                                          |
+| Property tests     | 0     |                                          |
+| Fuzz tests         | 0     | `tests/fuzz/placeholder.txt` only        |
+| Idris2 proofs      | 0     | Aspirational per estate standard         |
+| ECHIDNA quorum     | 0     | Aspirational per estate standard         |
 
-## What's Covered
+## What's Missing (to reach CRG B+)
 
-- [x] ATS2 crypto and identity verification
-- [x] Zig FFI crypto layer tests
-- [x] Echidna formal specification
-- [x] Packaging validation
+### Must have before production (blocks shipping)
 
-## Still Missing (for CRG B+)
+- [ ] `vault-broker`: grant→redeem round-trip test
+- [ ] `vault-broker`: double-redeem returns 410
+- [ ] `vault-broker`: expired grant returns 410
+- [ ] `vault-broker`: wrong `RGTV_AGENT_TOKEN` returns 401
+- [ ] `vault-broker`: unknown hint returns 404
+- [ ] `vault-broker`: concurrent-redeem race (single winner)
+- [ ] `vault-worker`: wrangler integration suite covering the six cases above
+- [ ] `rgtv-cli`: round-trip against a local `vault-broker`
 
-- [ ] Property-based testing for vault operations
-- [ ] Fuzzing for cryptographic edge cases
-- [ ] Performance benchmarks
-- [ ] Integration tests with container deployment
+### Should have before 1.0
+
+- [ ] Property-based testing (`proptest`) of `vault-broker` state machine
+- [ ] Fuzz testing of grant-ID parsing and HTTP request shapes
+- [ ] Performance benchmarks (grants/sec sustainable)
+- [ ] Memory-safety assertions on `Zeroizing<String>` lifecycle
+
+### Nice to have (estate-aligned)
+
+- [ ] Idris2 ABI for vault-broker HTTP surface, Zig FFI for consumers
+- [ ] ECHIDNA quorum validation of invariants
+- [ ] VeriSimDB audit event feed
 
 ## Run Tests
 
 ```bash
-cd /var/mnt/eclipse/repos/reasonably-good-token-vault && make test
+just test   # runs cargo test on vault-broker + rgtv-cli
 ```

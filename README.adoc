@@ -1,392 +1,151 @@
-image:https://img.shields.io/badge/License-MPL_2.0-blue.svg[MPL-2.0-or-later,link="https://opensource.org/licenses/MPL-2.0"]
-image:https://img.shields.io/badge/Philosophy-Palimpsest-indigo.svg[Palimpsest,link="https://github.com/hyperpolymath/palimpsest-license"]
-
-== License & Philosophy
-
-This project must declare **MPL-2.0-or-later** for platform/tooling compatibility.
-
-Philosophy: **Palimpsest**. The Palimpsest-MPL (PMPL) text is provided in `license/PMPL-1.0.txt`, and the canonical source is the palimpsest-license repository.
-
-// SPDX-License-Identifier: MPL-2.0-or-later
-// SPDX-FileCopyrightText: 2025 Jonathan D.A. Jewell
-= Reasonably Good Token Vault
-
+// SPDX-License-Identifier: PMPL-1.0-or-later
+// SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+= Reasonably Good Token Vault (RGTV)
 :toc: preamble
 :toclevels: 3
 :icons: font
 :source-highlighter: rouge
 :sectnums:
 :sectnumlevels: 3
-:description: Post-quantum secure identity vault for SSH keys, API tokens, PGP keys, and digital credentials. Open source, formally verified, with protection against future quantum computers.
-:keywords: password manager, identity vault, SSH key storage, PGP key manager, API token security, post-quantum cryptography, Kyber, Dilithium, secure credential storage, open source security
+:description: One-use credential broker for LLM agents. Agents never see raw API tokens; they receive opaque grants and redeem them via a trusted HTTP gateway.
+:keywords: LLM agent security, credential broker, zero-trust, Cloudflare Workers, Durable Objects, Rust, one-use tokens
 
-ifdef::env-github[]
-:tip-caption: :bulb:
-:note-caption: :information_source:
-:important-caption: :heavy_exclamation_mark:
-:caution-caption: :fire:
-:warning-caption: :warning:
-endif::[]
-
-*Keep Your Digital Identity Safe — Even From Future Threats*
-
-image:https://img.shields.io/badge/Post--Quantum-Secure-blue[Post-Quantum Secure]
-image:https://img.shields.io/badge/Formally-Verified-green[Formally Verified]
+image:https://img.shields.io/badge/License-PMPL_1.0--or--later-blue.svg[PMPL-1.0-or-later]
 image:https://img.shields.io/badge/Status-Alpha-yellow[Status: Alpha]
+image:https://img.shields.io/badge/Production-NOT%20READY-red[Not production-ready]
 
-== What Is the RGT Vault?
+[IMPORTANT]
+.Current status — read before using
+====
+RGTV is *alpha*. It is not yet safe for production. See
+<<known-unsafe-for-production>> below and
+`.machine_readable/6a2/STATE.a2ml` for the authoritative
+critical-next-actions list.
 
-A Svalinn-based Vault stores your digital identities securely. It goes beyond typical password managers to protect your most sensitive credentials.
+This repo was previously branded as a general-purpose post-quantum password
+manager ("Svalinn Vault"). That project was abandoned. The shipping code is
+*not* post-quantum, *not* formally verified, and *not* a password manager.
+What it *is* is described below.
+====
 
-=== What You Can Store
+== What RGTV is
 
-* *SSH keys* — Secure shell access to servers
-* *PGP/GPG keys* — Email encryption and file signing
-* *Personal Access Tokens* — GitHub, GitLab, cloud services
-* *API credentials* — REST, GraphQL, gRPC endpoints
-* *OAuth2/JWT tokens* — Third-party app access
-* *X.509 certificates* — Code signing and authentication
-* *Decentralised Identifiers (DIDs)* — Web3 identity
-* *WireGuard keys* — VPN connections
+A credential-passing broker for LLM agents. When an autonomous agent needs
+an API token, it asks RGTV for a grant — a 16-byte opaque UUID. The agent
+passes the grant to the destination service via a trusted wrapper; the
+wrapper redeems the grant for the real token and uses it on the agent's
+behalf. The agent itself never sees the token value.
 
-=== Why Choose RGT Vault?
+The motivating threat: an LLM that has processed a raw credential string
+has potentially leaked it — to logs, context-window dumps, fine-tuning
+corpora, crash reports, or downstream caches. Opaque grants confine that
+exposure.
 
-Most password managers store passwords. RGT Vault stores cryptographic keys and tokens that control access to your entire digital life.
+== What RGTV is not
 
-[cols="1,1"]
+* *Not* a SOPS / age / Hashicorp Vault replacement. Those encrypt secrets
+  at rest in files or a persistent store. RGTV passes live tokens over HTTP
+  between a trusted operator's environment and a trusted wrapper. Different
+  problem, different design.
+* *Not* post-quantum secure. No Kyber, no Dilithium, no lattice-based
+  cryptography anywhere in the shipping code.
+* *Not* formally verified. Zero Idris2 proofs, zero Lean4, zero ECHIDNA
+  quorum. The working crates have zero automated tests today.
+* *Not* a password manager for humans.
+
+== Architecture
+
+Three crates, each independently buildable:
+
+[cols="1,3"]
 |===
-|Feature |What It Means
+| Component | Role
 
-|*Quantum-safe encryption*
-|Protected even when quantum computers become powerful enough to break current encryption
+| `vault-broker/`
+| Rust axum HTTP server (`#![forbid(unsafe_code)]`). Holds
+`hint → Zeroizing<String>` in-process. Used for local development and as a
+Fly.io spot-test backend. Not suitable for multi-tenant production.
 
-|*Mathematically proven security*
-|Computer proofs verify that critical security properties always hold
+| `vault-worker/`
+| Cloudflare Workers WASM (`crate-type = ["cdylib"]`, workers-rs 0.8).
+Issues grants and redeems them exactly once. Concurrency-safety comes from
+Cloudflare Durable Objects: KV has no atomic read+delete, so grants live in
+a DO instance where the single-threaded runtime serialises the
+check-and-delete. Credential values live in a CF KV namespace populated
+out-of-band by an operator.
 
-|*Zero-knowledge storage*
-|Your credentials are unreadable scrambled fragments until you need them
-
-|*Open source*
-|Anyone can inspect, audit, and improve the code
+| `rgtv-cli/`
+| The `rgtv` binary. Sync `ureq` client for the broker/worker. `Zeroizing`
+on redeemed values so the secret is scrubbed from the CLI's heap on drop.
 |===
 
-== Quick Start
+Full design rationale is in `EXPLAINME.adoc`. The ADRs live in
+`.machine_readable/6a2/META.a2ml`.
 
-=== Install
+[[known-unsafe-for-production]]
+== Known unsafe for production
+
+This is the current truth. `STATE.a2ml`'s critical-next-actions list is
+authoritative; items below are the ones blocking production use.
+
+. *Plaintext credentials in Cloudflare KV.* The `CREDENTIALS` KV namespace
+  stores token values unencrypted at rest. Anyone with KV-read access on
+  the Cloudflare account can exfiltrate every credential. Fix: AES-256-GCM
+  envelope encryption keyed by a Worker Secret.
+. *Single shared bearer token for all agents.* Every consumer authenticates
+  to the broker with the same `RGTV_AGENT_TOKEN`. Compromise of any one
+  consumer recovers every credential in the vault. Per-agent tokens plus a
+  revocation list are needed before multi-consumer production use.
+. *No audit log.* Grants and redemptions are emitted only to `tracing`
+  stderr. No durable record, no VeriSimDB feed, no alerting hook.
+. *No rate limiting.* A stolen agent token has no per-client rate cap.
+. *`Math.random()` UUIDs in the Worker.* `vault-worker` generates grant IDs
+  via the WASM `uuid` crate's fallback RNG, which reduces to
+  `Math.random()` in Workers. That is *not* cryptographically secure.
+  Grant IDs must be generated via `crypto.getRandomValues` before
+  production use.
+. *Zero tests.* No unit tests, no integration tests, no fuzz, no property
+  tests. The six minimum-viable test cases (grant→redeem round-trip,
+  double-redeem → 410, expired → 410, wrong token → 401, unknown hint →
+  404, concurrent-redeem race) must all pass before shipping.
+. *`.expect("TODO")` in live request handlers.* `vault-broker` has
+  `Mutex::lock().expect()` calls in endpoints. A poisoned mutex will panic
+  the server. These must convert to fail-closed 500 responses.
+
+Until these land, use SOPS+age for secrets-at-rest and keep RGTV as a
+dev-only tool.
+
+== Quickstart
+
+Local broker, in-memory only:
 
 [source,bash]
 ----
-# Using Nix (recommended)
-nix profile install github:hyperpolymath/reasonable-good-token-vault
-
-# Using Guix
-guix install -f guix.scm
-
-# Container deployment
-podman pull ghcr.io/hyperpolymath/svalinn-vault:latest
+just broker-run
+# in another shell:
+just cli-grant-create HINT=GITHUB_TOKEN
+just cli-grant-redeem GRANT_ID=<uuid from above>
 ----
 
-=== First Steps
+Cloudflare Worker, with a CF account configured:
 
 [source,bash]
 ----
-# Create your vault
-svalinn-cli init
+# one-time: populate a credential value into KV (never commits it to git)
+just worker-cred-put HINT=GITHUB_TOKEN VALUE=<real-token>
 
-# Add an SSH key
-svalinn-cli add ssh --name "my-server-key" --path ~/.ssh/id_ed25519
-
-# Add a GitHub token
-svalinn-cli add pat --name "github-token" --host github.com
-
-# List your credentials (shows GUIDs only)
-svalinn-cli list
-
-# Retrieve a credential
-svalinn-cli get a7f2c3d4-e5b6-4a8c-9d0e-f1a2b3c4d5e6
+# deploy:
+just worker-deploy
 ----
 
-== How It Works
-
-=== Multiple Layers of Protection
-
-Your credentials pass through several security layers:
-
-[source]
-----
-                        Your Password
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                    ARGON2ID (64 MB Memory)                       │
-│     Turns your password into a strong encryption key             │
-│     Memory-hard: Stops GPU/ASIC password cracking               │
-└─────────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────────┐
-│              KYBER-1024 (Post-Quantum Encryption)                │
-│     Wraps your data in quantum-resistant encryption              │
-│     256-bit security against both classical and quantum attacks  │
-└─────────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                    AES-256-GCM (Data Encryption)                 │
-│     Military-grade authenticated encryption                      │
-│     Detects any tampering instantly                             │
-└─────────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────────┐
-│              FRAGMENTED GUID STORAGE (Redacted)                  │
-│     Credentials split into pieces, names scrambled               │
-│     Attacker sees only meaningless GUIDs                        │
-└─────────────────────────────────────────────────────────────────┘
-----
-
-=== GUID-Based Storage
-
-Every credential becomes a unique identifier (GUID). Names and details get scrambled. Even if someone accesses your vault, they see only:
-
-----
-a7f2c3d4-e5b6-4a8c-9d0e-f1a2b3c4d5e6: [ENCRYPTED FRAGMENT 3/5]
-b8c3d4e5-f6a7-5b9d-0e1f-a2b3c4d5e6f7: [ENCRYPTED FRAGMENT 1/5]
-----
-
-No way to tell what these are or what they're for.
-
-=== Delivery Container Architecture
-
-Your credentials only become complete when you actually need them:
-
-1. *Request* — You ask for a specific GUID with authentication
-2. *Gather* — System collects encrypted fragments
-3. *Assemble* — Fragments combined into complete credential
-4. *Deliver* — Encrypted for transport to your application
-5. *Erase* — All temporary data wiped from memory
-
-The complete credential exists only briefly in a secure container. It never gets stored in unencrypted form.
-
-== Security Features
-
-=== Network Protection
-
-* *IPv6 only* — All IPv4 connections blocked
-* *WireGuard VPN* — Traffic encrypted through AirVPN
-* *Honeypot services* — Fake ports catch attackers early
-* *Stripped headers* — No version leaks or fingerprinting
-
-=== Access Control
-
-* *Multi-factor authentication* — Password plus TOTP code
-* *Anti-AI CAPTCHA* — Stops automated attacks
-* *Variable login delays* — Blocks brute-force guessing
-* *Time-locked windows* — Limit when access is allowed
-* *Automatic lockout* — Failed attempts trigger protection
-
-=== File Security
-
-When locked, your vault files become completely inaccessible:
-
-[source,bash]
-----
-# File permissions when locked
-chmod 000 /vault/data/*     # No read, write, or execute
-chmod 000 /run/svalinn.sock # Socket inaccessible
-
-# Additional protection
-- Chroot jail containment
-- SELinux type enforcement
-- Memory obfuscation
-----
-
-=== Formal Verification
-
-We don't just hope the security works. We prove it mathematically.
-
-[cols="1,2"]
-|===
-|Tool |What It Proves
-
-|*Coq*
-|Theorems about encryption properties and state transitions
-
-|*Z3*
-|SMT proofs for cryptographic parameter correctness
-
-|*Echidna*
-|Property-based fuzzing for invariant violations
-|===
-
-These proofs run automatically on every code change.
-
-== Technical Details
-
-=== Cryptographic Algorithms
-
-[cols="1,1,2"]
-|===
-|Algorithm |Standard |Purpose
-
-|Kyber-1024
-|NIST ML-KEM (Level 5)
-|Post-quantum key encapsulation
-
-|Dilithium5
-|NIST ML-DSA (Level 5)
-|Post-quantum digital signatures
-
-|Ed448
-|RFC 8032
-|Classical digital signatures
-
-|AES-256-GCM
-|NIST SP 800-38D
-|Authenticated encryption
-
-|BLAKE3
-|Uniform output
-|Hashing and key derivation
-
-|Argon2id
-|RFC 9106
-|Password-based key derivation
-
-|SHAKE3-256
-|NIST FIPS 202
-|Extendable output function
-|===
-
-=== Language Stack
-
-The vault uses memory-safe languages throughout:
-
-* *ATS* (Applied Type System) — Core vault logic with dependent types
-* *Zig* — Low-level cryptographic bindings
-* *Idris2* — IPv6 packet handling with proofs
-* *Guile Scheme* — Configuration and data format
-* *Nickel* — Runtime configuration with type checking
-
-No C code in security-critical paths. No memory corruption vulnerabilities.
-
-=== Container Architecture
-
-[source]
-----
-┌────────────────────────────────────────────────────────────────┐
-│                    HOST SYSTEM (Fedora CoreOS)                  │
-│     SELinux Enforcing │ IPv4 DROP │ IPv6 Only │ WireGuard      │
-├────────────────────────────────────────────────────────────────┤
-│                                                                 │
-│  ┌─────────────────────────────────────────────────────────┐   │
-│  │              DELIVERY CONTAINER (Assembly)               │   │
-│  │                                                          │   │
-│  │  • Assembles credentials from fragments                  │   │
-│  │  • Resolves GUIDs to actual names                        │   │
-│  │  • Encrypts for transport                                │   │
-│  │  • Zeroes memory after delivery                          │   │
-│  │                                                          │   │
-│  └──────────────────────────┬──────────────────────────────┘   │
-│                             │ API Socket Only                   │
-│  ┌──────────────────────────┴──────────────────────────────┐   │
-│  │               DATA CONTAINER (Chroot Jail)               │   │
-│  │               chmod 000 when locked                      │   │
-│  │                                                          │   │
-│  │  ┌──────────────────────────────────────────────────┐   │   │
-│  │  │                VAULT CORE (ATS)                   │   │   │
-│  │  │  Kyber-1024 │ Dilithium5 │ AES-256 │ BLAKE3     │   │   │
-│  │  └──────────────────────────────────────────────────┘   │   │
-│  │                                                          │   │
-│  │  ┌────────────┐  ┌────────────┐  ┌────────────┐         │   │
-│  │  │    CUBS    │  │   XTDB     │  │ Dragonfly  │         │   │
-│  │  │  (Storage) │  │  (Search)  │  │  (Cache)   │         │   │
-│  │  └────────────┘  └────────────┘  └────────────┘         │   │
-│  │                                                          │   │
-│  │  ALL DATA: Encrypted GUID fragments, names redacted      │   │
-│  └──────────────────────────────────────────────────────────┘   │
-│                                                                 │
-│  ┌──────────────────────────────────────────────────────────┐   │
-│  │                   IPv4 HONEYPOT LAYER                     │   │
-│  │   Ports: 22, 23, 80, 443, 3306, 3389, 5432               │   │
-│  └──────────────────────────────────────────────────────────┘   │
-└────────────────────────────────────────────────────────────────┘
-----
-
-== Documentation
-
-=== Guides
-
-* link:docs/installation.adoc[Installation Guide]
-* link:docs/configuration.adoc[Configuration Reference]
-* link:docs/cli-reference.adoc[CLI Command Reference]
-* link:docs/threat-model.adoc[Threat Model]
-
-=== Technical Reference
-
-* link:TECHSTACK.adoc[Complete Technology Stack]
-* link:ROADMAP.adoc[Development Roadmap]
-* link:docs/whitepaper/svalinn-vault.tex[Technical Whitepaper (LaTeX)]
-* link:validation/README.adoc[Formal Verification Suite]
-
-=== For Contributors
-
-* link:CONTRIBUTING.adoc[Contribution Guidelines]
-* link:SECURITY.adoc[Security Policy]
-* link:.claude/CLAUDE.md[AI Assistant Guidelines]
-
-== Status
-
-Svalinn Vault is in *alpha* development. The core architecture is solid, but:
-
-* Not all credential types are implemented yet
-* TUI is in early development
-* Some edge cases may not be handled
-* Security audit pending funding
-
-*Do not use for critical production credentials without additional safeguards.*
-
-See link:ROADMAP.adoc[ROADMAP.adoc] for the path to v1.0.0.
-
-== Security and Support
-
-=== Found a Vulnerability?
-
-*Do not* open public GitHub issues for security problems.
-
-Email: security@hyperpolymath.example
-
-See link:SECURITY.adoc[SECURITY.adoc] for our disclosure policy and bug bounty information.
-
-=== Get Help
-
-* *Documentation issues* — Open a GitHub Issue
-* *Feature requests* — Open a GitHub Discussion
-* *General questions* — GitHub Discussions Q&A category
-
-== Funding
-
-Building security software takes time and expertise. We'd love to offer proper bug bounties and pursue formal certification, but that requires funding we don't currently have.
-
-=== Support This Project
-
-* link:https://github.com/sponsors/hyperpolymath[GitHub Sponsors]
-* link:https://opencollective.com/hyperpolymath[Open Collective]
-
-Every contribution helps us move toward a more secure release.
-
-_See link:SECURITY.adoc[SECURITY.adoc] for our honest take on the funding situation and what we can currently offer security researchers._
+Full details in `EXPLAINME.adoc`.
 
 == License
 
-*PMPL-1.0-or-later*
+PMPL-1.0-or-later. MPL-2.0 is the automatic legal fallback until PMPL
+achieves formal recognition; platform registries requiring OSI-approved
+licences should use MPL-2.0 explicitly. See `LICENSE` and `PALIMPSEST.adoc`.
 
-This ensures derivative works remain open source. Commercial licensing may be available — contact maintainers.
+== Contributing
 
-The link:LICENSES/PALIMPSEST.md[Palimpsest License] overlay encourages thoughtful extension of this work.
-
----
-
-*Svalinn* — From Norse mythology, the shield that protects the world from the sun's heat.
-
-_Your credentials deserve protection that lasts._
+See `CONTRIBUTING.adoc`. Security issues: see `SECURITY.adoc`.

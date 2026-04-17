@@ -68,7 +68,7 @@ include-deps = true
 
 [verify]
 vordr = true
-svalinn = true
+# svalinn = true  # removed 2026-04-17 during RGTV prune
 scan-on-build = true
 fail-on = ["critical", "high"]
 

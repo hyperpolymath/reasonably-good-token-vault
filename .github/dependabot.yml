@@ -8,29 +8,46 @@
 
 version: 2
 updates:
-  # Rust dependencies - vault-core
+  # Rust dependencies — vault-broker
   - package-ecosystem: "cargo"
-    directory: "/vault-core"
+    directory: "/vault-broker"
     schedule:
       interval: "daily"
-      time: "06:00"
-      timezone: "UTC"
-    open-pull-requests-limit: 20
+    open-pull-requests-limit: 10
     reviewers:
       - "hyperpolymath"
-    labels:
-      - "dependencies"
-      - "security"
-      - "rust"
+    labels: ["dependencies", "security", "rust"]
     commit-message:
       prefix: "chore(deps)"
       include: "scope"
-    # Alert on ALL updates including patch
-    # Do NOT ignore any versions
     groups:
-      rust-all:
-        patterns:
-          - "*"
+      rust-all: { patterns: ["*"] }
+
+  # Rust dependencies — vault-worker
+  - package-ecosystem: "cargo"
+    directory: "/vault-worker"
+    schedule:
+      interval: "daily"
+    open-pull-requests-limit: 10
+    reviewers:
+      - "hyperpolymath"
+    labels: ["dependencies", "security", "rust", "wasm"]
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+
+  # Rust dependencies — rgtv-cli
+  - package-ecosystem: "cargo"
+    directory: "/rgtv-cli"
+    schedule:
+      interval: "daily"
+    open-pull-requests-limit: 10
+    reviewers:
+      - "hyperpolymath"
+    labels: ["dependencies", "security", "rust"]
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
 
   # GitHub Actions - critical for CI security
   - package-ecosystem: "github-actions"

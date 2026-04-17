@@ -13,9 +13,9 @@ status = "active"
 name = "Reasonably Good Token Vault (RGTV)"
 purpose = """Zero-trust LLM credential broker. Issues opaque one-use grants to
 authenticated agents; agents redeem grants for raw credential values. Raw values
-never appear in agent context, prompts, or logs. Monorepo containing vault-core
-(crypto library), vault-broker (axum HTTP server), ada-cli, and FFI bindings."""
-completion-percentage = 68
+never appear in agent context, prompts, or logs. Three crates: vault-broker
+(axum HTTP server), vault-worker (Cloudflare Workers WASM), rgtv-cli."""
+completion-percentage = 45
 
 [position]
 phase = "implementation"
@@ -23,7 +23,6 @@ maturity = "alpha"
 
 [route-to-mvp]
 milestones = [
-  { name = "vault-core: in-memory Zeroizing<String> credential store", completion = 100 },
   { name = "vault-broker: axum HTTP server (grant + redeem endpoints)", completion = 100 },
   { name = "vault-broker: Fly.io deploy config (fly.toml + Containerfile)", completion = 100 },
   { name = "First consumer wired: nesy-solver-api RGTV client", completion = 100 },
@@ -72,7 +71,7 @@ entries = [
   { date = "2026-04-12 (s3)", description = "vault-worker DO migration: replaced GRANTS KV namespace with Durable Objects. One GrantObject DO instance per outstanding grant. Atomic one-use enforced by DO single-threaded runtime. Removed GRANTS KV binding from wrangler.toml. Added migrations block for GrantObject. do_put_request/do_post_request helpers. handle_create_grant stores via DO PUT. handle_redeem_grant dispatches via DO POST (atomic read+delete)." },
   { date = "2026-04-12 (s2)", description = "vault-worker: Cloudflare Workers production target (Rust/WASM, workers-rs 0.8). Same HTTP API as vault-broker. CREDENTIALS KV (hint→value, operator-managed). GRANTS KV (grant_id→hint, 30s TTL). Justfile: worker-dev, worker-deploy, worker-logs, worker-creds-list, worker-cred-put. KV double-spend caveat documented; Durable Objects migration on roadmap." },
   { date = "2026-04-12", description = "vault-broker: added GET /v1/credentials endpoint returning sorted hint names with no credential values. Fixed two pre-existing bugs: Zeroizing<String> clone in redeem handler, .json() tracing_subscriber call removed (feature not enabled)." },
-  { date = "2026-04-12", description = "rgtv CLI (svalinn-cli crate renamed): full rewrite wired to vault-broker HTTP API. Commands: get (grant→redeem→exec with Zeroizing value), list (/v1/credentials), status (/health), verify (functional round-trip), daemon start/stop/status (PID-file managed). Binary renamed from svalinn_cli to rgtv. Added ureq+zeroize deps." },
+  { date = "2026-04-12", description = "rgtv CLI (rgtv-cli crate renamed): full rewrite wired to vault-broker HTTP API. Commands: get (grant→redeem→exec with Zeroizing value), list (/v1/credentials), status (/health), verify (functional round-trip), daemon start/stop/status (PID-file managed). Binary renamed from svalinn_cli to rgtv. Added ureq+zeroize deps." },
   { date = "2026-04-12", description = "Justfile: replaced placeholder template targets with working broker/CLI targets (build-broker, build-cli, broker-dev, broker-start, broker-stop, broker-status, broker-logs, creds)." },
   { date = "2026-04-11", description = "vault-broker crate: axum 0.7 HTTP server with /health, POST /v1/grants, POST /v1/grants/:id/redeem. Zeroizing<String> for all credential storage. IPv6 dual-stack bind. UUID v4 grants. Auto-purge of expired grants on each create call." },
   { date = "2026-04-11", description = "vault-broker fly.toml and Containerfile: multi-stage Rust build on debian:bookworm-slim, non-root rgtv user, curl HEALTHCHECK, TCP service on :9100 with /health check and 15s grace period." },

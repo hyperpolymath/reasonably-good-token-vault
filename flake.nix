@@ -1,12 +1,12 @@
 # SPDX-License-Identifier: PMPL-1.0-or-later
 # SPDX-FileCopyrightText: 2025 Hyperpolymath
 #
-# Nix Flake for Svalinn Vault
+# Nix Flake for RGTV
 #
 # Provides reproducible builds and development environments
 
 {
-  description = "Svalinn Vault - Secure identity storage with post-quantum cryptography";
+  description = "RGTV - one-use credential broker for LLM agents (alpha)";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.05";
@@ -33,131 +33,53 @@
           rustc = rustToolchain;
         };
 
-        # Build the vault core
-        vault-core = naersk'.buildPackage {
-          pname = "svalinn-vault-core";
+        # Build vault-broker (axum HTTP server)
+        vault-broker = naersk'.buildPackage {
+          pname = "rgtv-vault-broker";
           version = "0.1.0";
-          src = ./vault-core;
-
-          nativeBuildInputs = with pkgs; [
-            pkg-config
-          ];
-
-          buildInputs = with pkgs; [
-            openssl
-          ];
-
-          # Security-focused build flags
-          RUSTFLAGS = "-C target-feature=+cet -C link-arg=-z,relro,-z,now";
-
-          # Run tests
+          src = ./vault-broker;
+          nativeBuildInputs = with pkgs; [ pkg-config ];
+          RUSTFLAGS = "-C link-arg=-z,relro,-z,now";
           doCheck = true;
         };
 
-        # Container image
-        container-image = pkgs.dockerTools.buildLayeredImage {
-          name = "svalinn-vault";
-          tag = "latest";
-
-          contents = with pkgs; [
-            vault-core
-            wireguard-tools
-            cacert
-            tzdata
-          ];
-
-          config = {
-            Entrypoint = [ "/bin/svalinn-vault" ];
-            Cmd = [ "serve" ];
-            ExposedPorts = {
-              "8443/tcp" = {};
-            };
-            User = "nobody:nogroup";
-            WorkingDir = "/vault";
-            Volumes = {
-              "/vault/data" = {};
-              "/vault/config" = {};
-              "/vault/keys" = {};
-            };
-          };
+        # Build the rgtv CLI
+        rgtv-cli = naersk'.buildPackage {
+          pname = "rgtv";
+          version = "0.1.0";
+          src = ./rgtv-cli;
+          nativeBuildInputs = with pkgs; [ pkg-config ];
+          RUSTFLAGS = "-C link-arg=-z,relro,-z,now";
+          doCheck = true;
         };
 
       in {
         packages = {
-          default = vault-core;
-          inherit vault-core container-image;
+          default = vault-broker;
+          inherit vault-broker rgtv-cli;
         };
 
         # Development shell
         devShells.default = pkgs.mkShell {
           buildInputs = with pkgs; [
-            # Rust
             rustToolchain
-
-            # Ada (GNAT)
-            gnat
-            gprbuild
-
-            # Idris2
-            idris2
-
-            # Build tools
             pkg-config
             openssl
-
-            # Security tools
-            wireguard-tools
-            openssl
-
-            # Database tools
-            # Note: XTDB and CUBS would need custom derivations
-
-            # Version management (asdf-like)
-            mise
-
-            # Linting and formatting
             rustfmt
             clippy
-
-            # Spell checking
-            aspell
-            aspellDicts.en
-
-            # Document conversion
-            pandoc
-
-            # Fuzzy search
-            agrep
           ];
 
           shellHook = ''
-            echo "Svalinn Vault Development Environment"
+            echo "RGTV Development Environment"
             echo "======================================"
             echo "Rust: $(rustc --version)"
-            echo "GNAT: $(gnat --version | head -1)"
             echo ""
             echo "Available commands:"
-            echo "  cargo build    - Build vault core"
+            echo "  cargo build    - Build vault-broker or rgtv-cli"
             echo "  cargo test     - Run tests"
-            echo "  gprbuild       - Build Ada CLI"
-            echo ""
-            echo "Security: Hostile environment protections enabled"
+            echo "  just           - See all recipes"
           '';
-
-          # Security environment variables
-          SVALINN_HOSTILE_ENV = "true";
-          SVALINN_VERIFY_INTEGRITY = "always";
         };
-
-        # Formal validation with echidna
-        checks.formal-validation = pkgs.runCommand "echidna-validation" {
-          buildInputs = [ pkgs.echidna ];
-        } ''
-          echo "Running formal validation..."
-          # echidna would validate the contracts here
-          mkdir -p $out
-          echo "Validation passed" > $out/result
-        '';
       }
     );
 }

@@ -30,11 +30,11 @@ decisions = [
     rationale = "Idiomatic async Rust for HTTP; Zeroizing scrubs heap on drop; axum router matches vault-worker's route surface identically so the rgtv CLI works against both.",
     consequences = "vault-broker holds credentials in-process (Arc<Mutex<HashMap>>); not suitable for multi-node production — CF Workers is." },
 
-  { id = "ADR-004", title = "rgtv CLI (formerly svalinn-cli) wired to HTTP API", status = "accepted", date = "2026-04-12",
+  { id = "ADR-004", title = "rgtv CLI (formerly rgtv-cli) wired to HTTP API", status = "accepted", date = "2026-04-12",
     context = "The CLI binary was named svalinn_cli and was a skeleton not wired to vault-broker.",
     decision = "Renamed to rgtv binary. Full rewrite using ureq 2 (sync HTTP) + Zeroizing<String>. Works against both vault-broker and vault-worker.",
     rationale = "Single synchronous binary; no async runtime needed for CLI; ureq is minimal.",
-    consequences = "svalinn-cli crate name kept for Cargo workspace; only the binary name changed." },
+    consequences = "rgtv-cli crate name kept for Cargo workspace; only the binary name changed." },
 
   { id = "ADR-005", title = "Bearer token auth (RGTV_AGENT_TOKEN) as sole auth mechanism", status = "accepted", date = "2026-04-11",
     context = "LLM agents need a simple, stateless auth mechanism compatible with both vault-broker and vault-worker.",

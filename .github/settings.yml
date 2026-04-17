@@ -8,7 +8,7 @@
 
 repository:
   name: reasonable-good-token-vault
-  description: "Svalinn Secure Identity Vault - Post-quantum cryptography for SSH/PGP/PAT/API credentials"
+  description: "RGTV — one-use credential broker for LLM agents (alpha, not for production)"
   homepage: https://hyperpolymath.github.io/reasonable-good-token-vault
   private: false
   has_issues: true

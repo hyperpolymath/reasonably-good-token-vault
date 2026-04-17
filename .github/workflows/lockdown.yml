@@ -293,7 +293,7 @@ jobs:
       - name: Generate Report
         run: |
           echo "╔══════════════════════════════════════════════════════════════╗"
-          echo "║              SVALINN VAULT LOCKDOWN REPORT                   ║"
+          echo "║              RGTV LOCKDOWN REPORT                   ║"
           echo "╠══════════════════════════════════════════════════════════════╣"
           echo "║ Commit Signatures: ${{ needs.verify-signatures.result }}"
           echo "║ Branch Protection: ${{ needs.branch-protection.result }}"

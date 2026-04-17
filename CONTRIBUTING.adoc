@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MPL-2.0-or-later
 // SPDX-FileCopyrightText: 2025 Jonathan D.A. Jewell
-= Contributing to Svalinn Vault
+= Contributing to RGTV
 :toc:
 :toclevels: 2
 
-Thank you for your interest in contributing to Svalinn Vault. This document outlines our strict requirements for all contributions.
+Thank you for your interest in contributing to RGTV. This document outlines our strict requirements for all contributions.
 
 == Code of Conduct
 

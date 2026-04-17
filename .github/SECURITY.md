@@ -104,6 +104,6 @@ All releases are signed and include SHA-256 checksums:
 
 ```bash
 # Verify release
-sha256sum -c svalinn-vault-0.1.0.sha256
-gpg --verify svalinn-vault-0.1.0.sig svalinn-vault-0.1.0.tar.gz
+sha256sum -c rgtv-vault-0.1.0.sha256
+gpg --verify rgtv-vault-0.1.0.sig rgtv-vault-0.1.0.tar.gz
 ```

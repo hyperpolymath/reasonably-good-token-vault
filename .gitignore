@@ -13,9 +13,8 @@ Thumbs.db
 # Rust — per-crate target directories (root /target/ is root-anchored, won't match subdirs)
 /target/
 vault-broker/target/
-vault-core/target/
-svalinn-cli/target/
 vault-worker/target/
+rgtv-cli/target/
 
 # Cloudflare Workers build artefacts
 vault-worker/build/
@@ -56,3 +55,11 @@ htmlcov/
 # Vexometer traces (keep examples)
 /vexometer/*.json
 !/vexometer/example-*.json
+target/
+node_modules/
+_build/
+deps/
+.elixir_ls/
+.cache/
+build/
+dist/

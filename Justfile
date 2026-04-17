@@ -11,7 +11,7 @@ default:
 # Build vault-broker and rgtv CLI
 build:
     cargo build --manifest-path vault-broker/Cargo.toml --release
-    cargo build --manifest-path svalinn-cli/Cargo.toml --release
+    cargo build --manifest-path rgtv-cli/Cargo.toml --release
 
 # Build vault-broker only
 build-broker:
@@ -19,11 +19,7 @@ build-broker:
 
 # Build rgtv CLI only
 build-cli:
-    cargo build --manifest-path svalinn-cli/Cargo.toml --release
-
-# Build vault-core crypto library
-build-core:
-    cargo build --manifest-path vault-core/Cargo.toml --release
+    cargo build --manifest-path rgtv-cli/Cargo.toml --release
 
 # Build vault-worker WASM (requires worker-build: cargo install worker-build)
 build-worker:
@@ -32,26 +28,24 @@ build-worker:
 # Run tests for all Rust crates
 test:
     cargo test --manifest-path vault-broker/Cargo.toml
-    cargo test --manifest-path svalinn-cli/Cargo.toml
-    cargo test --manifest-path vault-core/Cargo.toml
+    cargo test --manifest-path rgtv-cli/Cargo.toml
 
 # Run clippy + fmt check for all Rust crates
 check:
     cargo fmt --manifest-path vault-broker/Cargo.toml --check
     cargo clippy --manifest-path vault-broker/Cargo.toml -- -D warnings
-    cargo fmt --manifest-path svalinn-cli/Cargo.toml --check
-    cargo clippy --manifest-path svalinn-cli/Cargo.toml -- -D warnings
+    cargo fmt --manifest-path rgtv-cli/Cargo.toml --check
+    cargo clippy --manifest-path rgtv-cli/Cargo.toml -- -D warnings
 
 # Format all Rust source
 fmt:
     cargo fmt --manifest-path vault-broker/Cargo.toml
-    cargo fmt --manifest-path svalinn-cli/Cargo.toml
+    cargo fmt --manifest-path rgtv-cli/Cargo.toml
 
 # Clean all build artefacts
 clean:
     cargo clean --manifest-path vault-broker/Cargo.toml
-    cargo clean --manifest-path svalinn-cli/Cargo.toml
-    cargo clean --manifest-path vault-core/Cargo.toml
+    cargo clean --manifest-path rgtv-cli/Cargo.toml
 
 # ---------------------------------------------------------------------------
 # Operational: daemon + CLI

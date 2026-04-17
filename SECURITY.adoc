@@ -1,278 +1,133 @@
-// SPDX-License-Identifier: MPL-2.0-or-later
-// SPDX-FileCopyrightText: 2025 Jonathan D.A. Jewell
-= Security Policy
+// SPDX-License-Identifier: PMPL-1.0-or-later
+// SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+= RGTV Security Policy
 :toc: preamble
 :icons: font
 :sectnums:
 
-*Your secrets deserve better protection than a password manager can offer.*
-
-== What Svalinn Vault Protects
-
-Svalinn Vault keeps your digital identities safe. This includes:
-
-- *SSH keys* for secure server access
-- *PGP/GPG keys* for encrypted email and file signing
-- *API tokens* for GitHub, GitLab, cloud services
-- *OAuth credentials* for third-party apps
-- *Certificates* for website and code signing
-- *WireGuard keys* for VPN connections
-
-Each credential gets a unique ID (GUID) and stays encrypted until you actually need it. Names and details are scrambled even inside the vault. An attacker who breaks in sees only meaningless strings of letters and numbers.
-
-== How We Keep Your Data Safe
-
-=== Multiple Layers of Encryption
-
-Your credentials pass through several protection layers:
-
-[cols="1,2"]
-|===
-|Protection |What It Does
-
-|*Argon2id*
-|Turns your password into a strong encryption key. Uses 64 MB of memory to stop password-guessing attacks.
-
-|*Kyber-1024*
-|Quantum-resistant encryption. Stays secure even against future quantum computers.
-
-|*AES-256-GCM*
-|Military-grade encryption used by governments and banks worldwide.
-
-|*BLAKE3*
-|Fast, secure hashing for verification. Catches any tampering instantly.
-
-|*Dilithium5*
-|Quantum-resistant signatures. Proves data hasn't been modified.
-|===
-
-=== Network Protection
-
-Svalinn Vault uses IPv6 connections only. All IPv4 traffic gets blocked. This removes most internet attack methods.
-
-The vault connects through AirVPN using WireGuard encryption. Even your internet provider can't see what you're doing.
-
-Fake honeypot services run on common attack ports (22, 80, 443). Any attacker scanning your system triggers alerts before reaching real services.
-
-=== Access Control
-
-- *Multi-factor authentication* blocks unauthorised access
-- *Time-locked access windows* limit when credentials can be read
-- *Anti-AI CAPTCHA* stops automated attacks
-- *Variable login delays* prevent brute-force guessing
-- *Automatic lockout* after failed attempts
-
-=== File Security
-
-When locked:
-
-- All vault files get *chmod 000* permissions (completely inaccessible)
-- The vault runs inside a *chroot jail* with minimal access
-- *SELinux* enforces strict access rules
-- *Code obfuscation* scrambles memory contents
-
-== Reporting Security Issues
-
-Found a vulnerability? We want to hear about it.
-
-=== How to Report
-
-*DO NOT* open public GitHub issues for security problems. This protects other users until we fix the issue.
-
-Instead, email us directly:
-
-----
-security@hyperpolymath.example
-----
-
-Our PGP key fingerprint:
-
-----
-[To be published when infrastructure is in place]
-----
-
-=== What to Include
-
-Your report should contain:
-
-1. *Clear description* of the vulnerability
-2. *Steps to reproduce* the issue
-3. *Expected vs actual behaviour*
-4. *Your assessment* of severity and impact
-5. *Any suggested fixes* (optional but helpful)
-
-=== Response Timeline
-
-[cols="1,2"]
-|===
-|Timeframe |Our Commitment
-
-|*24 hours*
-|We acknowledge your report
-
-|*72 hours*
-|Initial assessment complete
-
-|*7 days*
-|Detailed investigation done
-
-|*30 days*
-|Fix developed and tested
-
-|*45 days*
-|Public disclosure (coordinated with you)
-|===
-
-We aim to beat these times. Complex issues may take longer.
-
-== Bug Bounty Programme
-
-=== The Honest Truth
-
-Here's the thing: we'd *love* to run a proper bug bounty programme. Security researchers deserve fair payment for finding vulnerabilities. Good bug bounty programmes pay thousands of pounds for critical issues.
-
-We can't do that right now.
-
-Independent open-source developers don't have venture capital backing. We're not a Silicon Valley startup with millions in funding. We're building security software because people deserve better tools than what's currently available.
-
-=== What We Can Offer
-
-*Currently (Unfunded):*
-
-- Public acknowledgement in our Hall of Fame
-- CVE credit with your name
-- A sincere thank-you and our genuine gratitude
-- Our commitment to fix issues promptly
-
-*If Funded in Future:*
-
-We would immediately establish proper bounties:
-
-[cols="1,1"]
-|===
-|Severity |Potential Bounty
-
-|Critical (RCE, key exposure)
-|£2,000 - £10,000
-
-|High (auth bypass, data leak)
-|£500 - £2,000
-
-|Medium (limited impact)
-|£100 - £500
-
-|Low (minor issues)
-|£25 - £100
-|===
-
-=== Support This Project
-
-Want to help us offer real bug bounties?
-
-*Funding Options:*
-
-- link:https://github.com/sponsors/hyperpolymath[GitHub Sponsors]
-- link:https://opencollective.com/hyperpolymath[Open Collective]
-- Cryptocurrency: See link:FUNDING.yml[FUNDING.yml]
-
-Every contribution moves us closer to properly rewarding security researchers.
-
-_Yes, it's a bit ridiculous that security-critical software relies on goodwill when venture-backed apps with cute mascots get millions. But here we are. We're doing what we can with what we have._
-
-== Security Practices
-
-=== What We Do
-
-- *Regular dependency audits* using cargo-audit, npm-audit
-- *Static analysis* with CodeQL and custom linters
-- *Fuzzing* with libFuzzer and Echidna
-- *Formal verification* using Z3 and Coq provers
-- *Memory-safe languages* (Rust, ATS, Zig) with no unsafe code in security paths
-- *Signed commits* required for all changes
-- *Code review* by multiple maintainers before merge
-
-=== What We Don't Do
-
-- No telemetry or analytics
-- No phone-home features
-- No cloud sync (your data stays local)
-- No third-party authentication services
-- No closed-source components
-- No dependencies without security review
-
-== Known Limitations
-
-We believe in honest communication:
-
-[cols="1,2"]
-|===
-|Limitation |Mitigation
-
-|*Side-channel attacks*
-|Constant-time crypto implementations used where available
-
-|*Physical access*
-|Beyond our threat model - use full-disk encryption
-
-|*Memory forensics*
-|Memory zeroing on lock, but cold boot attacks possible
-
-|*Quantum computers*
-|Kyber-1024 provides estimated protection; cryptography evolves
-
-|*Supply chain*
-|SHA-pinned dependencies; but ultimate trust required somewhere
-|===
-
-No security system is perfect. We tell you what ours can and cannot do.
-
-== Threat Model
-
-=== In Scope
-
-- Remote network attacks
-- Malware on the same system
-- Stolen encrypted backups
-- Compromised cloud storage
-- Future quantum computer attacks
-- Credential stuffing attacks
-- Insider threats with user access
-
-=== Out of Scope
-
-- Nation-state attackers with physical access
-- Hardware implants
-- $5 wrench attacks (coercion)
-- Malware with root access before vault installation
-- Vulnerabilities in the operating system kernel
-
-== Compliance
-
-Svalinn Vault is designed with these standards in mind:
-
-- *OWASP* guidelines for secure storage
-- *NIST* post-quantum cryptography recommendations
-- *FIPS 140-3* algorithm requirements (where applicable)
-- *GDPR* data protection principles
-
-Formal certification is not currently pursued (costs money we don't have).
-
-== Hall of Fame
-
-Security researchers who have helped improve Svalinn Vault:
-
-|===
-|Researcher |Contribution |Date
-
-|_Your name here_
-|_Be the first to find something_
-|_Waiting for you_
-|===
-
-== Contact
-
-- *Security issues*: security@hyperpolymath.example
-- *General questions*: Open a GitHub Discussion
-- *Feature requests*: Open a GitHub Issue (non-security)
-
-_Thank you for helping keep Svalinn Vault secure._
+[IMPORTANT]
+====
+This replaces a prior SECURITY.adoc that described a never-built
+post-quantum password manager ("Svalinn Vault"). None of the
+Argon2id/Kyber/Dilithium/AirVPN/honeypot/chroot/SELinux mechanisms
+described in the old document exist in the shipping RGTV code. Read the
+rest of this file for the actual security properties.
+====
+
+== What RGTV is defending against
+
+The single motivating threat: *an LLM agent accidentally leaking raw
+credential values through its context window, outputs, logs, or downstream
+caches*. An agent that has processed a token string is assumed to have
+leaked it. RGTV confines that exposure by never giving the agent the token
+value — only an opaque one-use grant that a trusted wrapper redeems on the
+agent's behalf.
+
+Concretely, RGTV makes the following claim: *an attacker who reads an
+LLM agent's context window, logs, or scratchpad cannot recover the
+underlying credential value*. They can only recover grant IDs, and a
+grant ID is worthless the instant it is redeemed (or after its TTL
+expires, currently 5 minutes).
+
+== What RGTV is NOT defending against
+
+This list is exhaustive as of 2026-04-17. If your threat model includes
+anything below, *RGTV is not sufficient* — use something else or add
+the missing layer.
+
+* *Compromise of the agent bearer token (`RGTV_AGENT_TOKEN`).* It is a
+  single shared secret across all consumers. Whoever holds it can drain
+  every credential in the vault. Rotating the token requires redeploying
+  every agent.
+* *Compromise of the Cloudflare account or Worker operator.* Credential
+  values in the `CREDENTIALS` KV namespace are *plaintext at rest*. A
+  malicious or compromised operator can `wrangler kv key get` every value
+  directly. AES-256-GCM envelope encryption is planned but *not yet
+  implemented*.
+* *Compromise of the broker/worker host.* Memory dumps of a running
+  `vault-broker` or Durable Object instance will recover live credential
+  values. `Zeroizing<String>` scrubs values on drop, but values are
+  necessarily unencrypted in RAM during redemption.
+* *Replay of a redeemed credential by a compromised wrapper.* Once the
+  trusted wrapper has the plaintext credential, RGTV has no further
+  control. If the wrapper logs the value or sends it back to the agent,
+  the guarantee fails at the wrapper, not at RGTV.
+* *A malicious LLM that exfiltrates grant IDs before redemption.* The
+  attacker can redeem the grant before the wrapper does. Mitigations:
+  short TTL, single-redeem Durable-Object enforcement, audit log to
+  detect the race. Audit log is not yet implemented.
+* *Denial of service.* No rate limiting is implemented.
+* *Quantum adversaries.* RGTV uses no post-quantum primitives anywhere.
+  If a CRQC threat applies to your workload, RGTV does not help.
+* *Side-channel attacks.* No constant-time guarantees, no cache-side-channel
+  defence, no Meltdown/Spectre mitigations beyond what the underlying
+  runtime (Cloudflare Workers, axum on Fly.io) provides by default.
+
+== Current security posture
+
+The following must land before any production deployment. Items are
+tracked in `.machine_readable/6a2/STATE.a2ml` under
+`critical-next-actions`.
+
+. *Envelope encryption of KV-stored credentials.* AES-256-GCM with a master
+  key held as a Cloudflare Worker Secret. Until this lands, KV is a
+  plaintext credential store visible to any CF account reader.
+. *Per-agent bearer tokens with revocation list.* Replace the shared
+  `RGTV_AGENT_TOKEN`.
+. *Durable audit log.* Currently only `tracing` stderr output. Needs
+  file-backed log at minimum, VeriSimDB feed long-term.
+. *Rate limiting* on grant creation and redemption.
+. *Cryptographically secure RNG in `vault-worker`.* Current grant ID
+  generation uses `Math.random()` via the `uuid` WASM fallback. Must route
+  through `crypto.getRandomValues`.
+. *Test battery.* Six minimum-viable cases before shipping: grant→redeem
+  round-trip, double-redeem → 410, expired → 410, wrong token → 401,
+  unknown hint → 404, concurrent-redeem race (single winner).
+. *Remove `.expect("TODO")` from live request handlers* in `vault-broker`.
+
+== Implemented protections
+
+The following *are* true of the current code and survive this audit:
+
+* *`#![forbid(unsafe_code)]`* on `vault-broker`, `vault-worker`, and
+  `rgtv-cli`. Zero `unsafe` blocks.
+* *`Zeroizing<String>`* wraps every credential value in every Rust
+  component — heap scrubbed on drop.
+* *Single-redeem atomicity* in `vault-worker` via Cloudflare Durable
+  Objects (single-threaded runtime serialises concurrent fetches to the
+  same DO instance, so `check+delete` is atomic).
+* *Short grant TTL* (5 minutes).
+* *PMPL-1.0-or-later license* on shipping source files; MPL-2.0 is the
+  legal fallback.
+* *Automatic purge of expired grants* on each grant creation in
+  `vault-broker`.
+* *IPv6 dual-stack bind* on `vault-broker`.
+* *Correct HTTP semantics*: 401 on bad token, 404 on unknown hint,
+  410 Gone on expired/redeemed grant.
+
+== Reporting a security issue
+
+Email: j.d.a.jewell@open.ac.uk. Include:
+
+* Affected component (`vault-broker`, `vault-worker`, `rgtv-cli`, or all).
+* Affected version or git commit SHA.
+* Reproduction steps or exploit PoC.
+* Any CVSS score you've computed (not required).
+
+Please do *not* file a public GitHub issue for anything exploitable. I
+aim to acknowledge reports within 72 hours and disclose fixes publicly
+once patches ship.
+
+Vulnerabilities in the *Svalinn-era legacy code* (now deleted from this
+repo) are out of scope — those crates did not compile and were never
+released. Reports against `vault-core/`, `vault-core-ats/`, or
+`vault-interface/` will be closed as N/A.
+
+== Supply-chain posture
+
+* Rust dependencies: `cargo audit` is run in CI (`.github/workflows/`).
+* Actions: SHA-pinned.
+* SBOM: not yet generated. Planned.
+* Formal verification: not yet started. Planned Idris2 ABI + Zig FFI work
+  is referenced in `.machine_readable/6a2/META.a2ml` as
+  aspirational; none of it exists in shipping code.

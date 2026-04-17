@@ -56,8 +56,7 @@ syscall); the entropy source is the JS runtime.
 
 | `vault-broker/` | Axum HTTP server. Spot-test / Fly.io target. In-memory credential store.
 | `vault-worker/` | Cloudflare Workers production target. Rust→WASM. Durable Objects for grant state.
-| `svalinn-cli/` | `rgtv` CLI binary. Wired to vault-broker/vault-worker HTTP API.
-| `vault-core/` | Crypto library crate (Zeroizing store). Used by vault-broker.
+| `rgtv-cli/` | `rgtv` CLI binary. Wired to vault-broker/vault-worker HTTP API.
 | `contractiles/` | Mustfile (invariant checks), Dustfile (recovery), Intentfile (future intent).
 | `.machine_readable/6a2/` | STATE, META, ECOSYSTEM, AGENTIC, NEUROSYM, PLAYBOOK a2ml files.
 | `Justfile` | All build, deploy, and operational targets.

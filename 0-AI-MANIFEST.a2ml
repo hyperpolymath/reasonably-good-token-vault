@@ -46,9 +46,12 @@ not-to-be-confused-with = [
 #   → go to the Svalinn repo and look for its Rokur component.
 # If you came here for zero-trust LLM credential brokering: RIGHT PLACE.
 
-# Internal subdirs named `svalinn-cli`, `terraform-provider-svalinn`, and
-# `ansible-collection-svalinn` are MISNAMED legacy scaffolding. They belong
-# to RGTV, not to the Svalinn gateway project. Rename is pending.
+# The previous Svalinn-named subdirs (`ansible-collection-svalinn`,
+# `terraform-provider-svalinn`, `ada-cli`, `vault-core`, `vault-core-ats`,
+# `vault-interface`, `honeypot`, `site`, `validation`, etc.) were deleted on
+# 2026-04-17 during the Svalinn/PQC prune — they were never wired to RGTV
+# and contradicted the real product description. Only the working RGTV trio
+# (`vault-broker`, `vault-worker`, `rgtv-cli`) remains.
 
 ai-agent-instructions = """
 Before acting on any request in this repo, CONFIRM WITH THE USER which of
