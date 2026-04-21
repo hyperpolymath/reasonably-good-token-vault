@@ -22,7 +22,7 @@ serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 
 # uuid v4 needs the 'js' feature in WASM so it uses Math.random() for entropy.
-uuid = { version = "1.6", features = ["v4", "js"] }
+uuid = { version = "1.23", features = ["v4", "js"] }
 
 # Routes panic messages to the Workers console log rather than aborting silently.
 console_error_panic_hook = "0.1"
