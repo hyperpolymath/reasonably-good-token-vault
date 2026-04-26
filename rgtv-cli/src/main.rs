@@ -203,7 +203,7 @@ fn log_file() -> PathBuf {
 
 fn write_pid(pid: u32) -> std::io::Result<()> {
     let path = pid_file();
-    fs::create_dir_all(path.parent().expect("TODO: handle error"))?;
+    fs::create_dir_all(path.parent().expect("invariant: pid_file() path always has a parent"))?;
     let mut f = fs::File::create(&path)?;
     write!(f, "{pid}")
 }
@@ -417,7 +417,7 @@ fn cmd_daemon_start(cfg: &Config) {
     }
 
     let log_path = log_file();
-    fs::create_dir_all(log_path.parent().expect("TODO: handle error")).unwrap_or_else(|e| {
+    fs::create_dir_all(log_path.parent().expect("invariant: log_file() path always has a parent")).unwrap_or_else(|e| {
         eprintln!("error: could not create state dir: {e}");
         process::exit(1);
     });
@@ -430,8 +430,16 @@ fn cmd_daemon_start(cfg: &Config) {
             process::exit(1);
         });
 
+    let log_stdout = match log.try_clone() {
+        Ok(f) => f,
+        Err(e) => {
+            eprintln!("error: could not clone log file handle: {e}");
+            process::exit(1);
+        }
+    };
+
     let child = process::Command::new(&cfg.broker_bin)
-        .stdout(log.try_clone().expect("TODO: handle error"))
+        .stdout(log_stdout)
         .stderr(log)
         .spawn()
         .unwrap_or_else(|e| {

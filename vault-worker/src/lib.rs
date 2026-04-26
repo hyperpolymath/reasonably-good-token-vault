@@ -171,7 +171,7 @@ fn check_auth(req: &Request, env: &Env) -> std::result::Result<(), Response> {
                 "server misconfigured: RGTV_AGENT_TOKEN not set",
                 500,
             )
-            .unwrap_or_else(|_| Response::empty().expect("TODO: handle error")));
+            .unwrap_or_else(|_| Response::empty().expect("invariant: Response::empty() construction always succeeds")));
         }
     };
     let expected = format!("Bearer {token}");
@@ -182,7 +182,7 @@ fn check_auth(req: &Request, env: &Env) -> std::result::Result<(), Response> {
         .unwrap_or_default();
     if auth != expected {
         Err(Response::error("unauthorized", 401)
-            .unwrap_or_else(|_| Response::empty().expect("TODO: handle error")))
+            .unwrap_or_else(|_| Response::empty().expect("invariant: Response::empty() construction always succeeds")))
     } else {
         Ok(())
     }
