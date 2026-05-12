@@ -64,6 +64,7 @@ struct GrantRecord {
 #[durable_object]
 pub struct GrantObject {
     state: State,
+    #[allow(dead_code)]
     env: Env,
 }
 
@@ -216,7 +217,7 @@ fn grant_ttl(env: &Env) -> u64 {
 
 /// Build a PUT request carrying `body_json` for the DO store operation.
 fn do_put_request(body_json: &str) -> Result<Request> {
-    let mut headers = Headers::new();
+    let headers = Headers::new();
     headers.set("Content-Type", "application/json")?;
     let body = wasm_bindgen::JsValue::from_str(body_json);
     let mut init = RequestInit::new();
