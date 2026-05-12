@@ -7,6 +7,8 @@
 #
 # Reference: ADR-002 in standards/agentic-a2ml/docs/
 
+name = "coverage"
+
 [metadata]
 version = "1.0.0"
 last-updated = "2026-03-24"
@@ -16,6 +18,8 @@ last-updated = "2026-03-24"
 # ============================================================================
 # Updated by agents at session end. Tracks which components have been
 # visited and which have known MUSTs that were skipped.
+
+name = "coverage"
 
 [coverage]
 total-components = 0

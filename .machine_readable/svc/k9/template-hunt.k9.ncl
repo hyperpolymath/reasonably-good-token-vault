@@ -17,7 +17,7 @@ K9!
       signature_required = true,
     },
     metadata = {
-      name = "TODO: component-name",
+      name = "template-hunt",
       version = "1.0.0",
       description = "TODO: Detailed description of what this component does",
       author = "Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>",

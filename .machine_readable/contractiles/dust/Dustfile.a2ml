@@ -1,20 +1,28 @@
 # SPDX-License-Identifier: PMPL-1.0-or-later
 # Dustfile — Cleanup and Hygiene Contract
 
+name = "Dustfile"
+
 [dustfile]
 version = "1.0.0"
 format = "a2ml"
+
+name = "Dustfile"
 
 [cleanup]
 stale-branch-policy = "delete-after-merge"
 artifact-retention = "90-days"
 cache-policy = "clear-on-release"
 
+name = "Dustfile"
+
 [hygiene]
 linting = "required"
 formatting = "required"
 dead-code-removal = "encouraged"
 todo-tracking = "tracked-in-issues"
+
+name = "Dustfile"
 
 [reversibility]
 backup-before-destructive = true

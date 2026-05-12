@@ -2,11 +2,15 @@
 # Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
 #
 # PLAYBOOK.a2ml — Operational runbook for RGTV
+name = "PLAYBOOK"
+
 [metadata]
 version = "0.2.0"
 last-updated = "2026-04-12"
 
 # ── Production: Cloudflare Workers ───────────────────────────────────────────
+
+name = "PLAYBOOK"
 
 [deployment.cloudflare-workers]
 worker-name = "rgtv-vault"
@@ -22,12 +26,16 @@ logs = "just worker-logs"
 creds-list = "just worker-creds-list"
 creds-put = "just worker-cred-put HINT value"
 
+name = "PLAYBOOK"
+
 [deployment.fly-io-spot-test]
 app-name = "rgtv-nesy"
 purpose = "Internal flycast spot-testing via nesy-solver-api only. NOT production."
 deploy = "NESY_INGEST_TOKEN=<tok> ./deploy-fly.sh rgtv"
 token-persistence = "~/.config/nesy-solver/rgtv-agent-token"
 url = "http://rgtv-nesy.flycast:9100 (private 6PN; not .internal)"
+
+name = "PLAYBOOK"
 
 [deployment.local-dev]
 start = "just broker-dev  (requires RGTV_AGENT_TOKEN + RGTV_CRED_<HINT>=<value>)"
@@ -37,6 +45,8 @@ daemon-status = "just broker-status"
 logs = "just broker-logs"
 
 # ── CLI (rgtv) ────────────────────────────────────────────────────────────────
+
+name = "PLAYBOOK"
 
 [cli]
 binary = "rgtv"
@@ -53,6 +63,8 @@ log-file = "~/.local/state/rgtv/vault-broker.log"
 
 # ── Incident response ─────────────────────────────────────────────────────────
 
+name = "PLAYBOOK"
+
 [incident-response]
 steps = [
   "1. rgtv status  — check broker reachable",
@@ -68,6 +80,8 @@ grant-not-found = "Redeem returns 404 — grant already redeemed or never existe
 unauthorized = "401 — check RGTV_AGENT_TOKEN matches worker secret."
 
 # ── Release process ───────────────────────────────────────────────────────────
+
+name = "PLAYBOOK"
 
 [release-process]
 steps = [

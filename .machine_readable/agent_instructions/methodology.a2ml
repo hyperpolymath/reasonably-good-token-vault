@@ -7,6 +7,8 @@
 #
 # Reference: ADR-002 in standards/agentic-a2ml/docs/
 
+name = "methodology"
+
 [metadata]
 version = "1.0.0"
 last-updated = "2026-03-24"
@@ -18,6 +20,8 @@ spec = "https://github.com/hyperpolymath/standards/blob/main/agentic-a2ml/docs/A
 # convergent: find gaps, fill them, build infrastructure (default for ops/infra)
 # divergent: find what's strongest, push it further (for research/creative)
 # hybrid: audit 20% of budget, then focus 80% on top MUSTs (default for most)
+
+name = "methodology"
 
 [methodology]
 default-mode = "hybrid"
@@ -32,6 +36,8 @@ spike-required = true         # Every session must ship code, not just designs
 # SHOULD (2x): Degrading quality of current work → fix if in zone
 # COULD (1x): Improving quality of adjacent work → add to debt list
 
+name = "methodology"
+
 [methodology.priority-weights]
 must = 3
 should = 2
@@ -43,6 +49,8 @@ could = 1
 # How to allocate effort across work types.
 # Prevents over-polishing docs while structural work waits.
 
+name = "methodology"
+
 [methodology.convergent-budget]
 structural = 70   # % for new modules, compilation fixes, wiring, integration
 corrective = 20   # % for bugs found, broken imports, stale references
@@ -53,6 +61,8 @@ perfective = 10   # % for SPDX headers, doc updates, formatting, style
 # ============================================================================
 # What makes this project special. Agents should DEEPEN this, not broaden it.
 # Customise this per project — the template default is generic.
+
+name = "methodology"
 
 [methodology.unique-strength]
 description = "{{PROJECT_UNIQUE_STRENGTH}}"
@@ -68,6 +78,8 @@ deepen-not-broaden = true
 # Test before any divergent action:
 #   "Does this deepen the existing strength, or add a parallel strength?"
 #   If parallel → stop. Note as cross-project insight.
+
+name = "methodology"
 
 [methodology.divergent-invariants]
 rules = [
@@ -87,6 +99,8 @@ rules = [
 # Help Phase 0 find the critical chain faster.
 # Updated at session end with newly discovered constraints.
 
+name = "methodology"
+
 [methodology.known-constraints]
 constraints = [
   # Customise per project. Examples:
@@ -99,6 +113,8 @@ constraints = [
 # ============================================================================
 # Phase 0 reads STATE.a2ml first but it may be broken.
 # These rules detect corrupt/template/stale state files.
+
+name = "methodology"
 
 [methodology.state-validation]
 reject-if-contains = ["{{PLACEHOLDER}}", "{{PROJECT}}", "rsr-template-repo"]

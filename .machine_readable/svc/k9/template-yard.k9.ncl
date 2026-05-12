@@ -16,7 +16,7 @@ K9!
       allow_subprocess = false,
     },
     metadata = {
-      name = "TODO: component-name",
+      name = "template-yard",
       version = "1.0.0",
       description = "TODO: Brief description with validation details",
       author = "Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>",

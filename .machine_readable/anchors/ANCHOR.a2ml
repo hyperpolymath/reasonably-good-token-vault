@@ -1,6 +1,7 @@
 # ⚓ ANCHOR: reasonably-good-token-vault
 # This is the canonical authority for the reasonably-good-token-vault repository.
 
+name: "ANCHOR"
 id: "org.hyperpolymath.reasonably-good-token-vault"
 version: "1.0.0"
 clade: "unknown"

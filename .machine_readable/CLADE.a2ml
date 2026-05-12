@@ -2,6 +2,8 @@
 # Clade declaration — part of the gv-clade-index registry
 # See: https://github.com/hyperpolymath/gv-clade-index
 
+name = "CLADE"
+
 [identity]
 uuid = "b4db4006-f93d-5651-a2ef-b38cddcb5281"
 primary-forge = "github"
@@ -9,16 +11,22 @@ primary-owner = "hyperpolymath"
 canonical-name = "reasonably-good-token-vault"
 prefixed-name = "sc-reasonably-good-token-vault"
 
+name = "CLADE"
+
 [clade]
 primary = "sc"
 secondary = []
 assigned = "2026-03-16"
 rationale = ""
 
+name = "CLADE"
+
 [forges]
 github = "hyperpolymath/reasonably-good-token-vault"
 gitlab = "hyperpolymath/reasonably-good-token-vault"
 bitbucket = "hyperpolymath/reasonably-good-token-vault"
+
+name = "CLADE"
 
 [lineage]
 type = "standalone"

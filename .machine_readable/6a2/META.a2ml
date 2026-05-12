@@ -2,13 +2,19 @@
 # Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
 #
 # META.a2ml — Reasonably Good Token Vault meta-level information
+name = "META"
+
 [metadata]
 version = "0.2.0"
 last-updated = "2026-04-12"
 
+name = "META"
+
 [project-info]
 license = "PMPL-1.0-or-later"
 author = "Jonathan D.A. Jewell (hyperpolymath)"
+
+name = "META"
 
 [architecture-decisions]
 decisions = [
@@ -43,6 +49,8 @@ decisions = [
     consequences = "All tokens share the same privilege level. Per-agent tokens are a future enhancement." },
 ]
 
+name = "META"
+
 [development-practices]
 versioning = "SemVer"
 documentation = "AsciiDoc"
@@ -50,6 +58,8 @@ build-tool = "just"
 rust-edition = "2021"
 wasm-target = "wasm32-unknown-unknown"
 worker-build = "worker-build (cargo install worker-build)"
+
+name = "META"
 
 [maintenance-axes]
 scoping-first = true
