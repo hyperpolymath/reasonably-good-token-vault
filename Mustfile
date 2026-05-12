@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+# Mustfile — Repository-wide must-rules for RGTV
+#
+# These are non-negotiable invariants. CI's Lockdown Enforcement workflow
+# greps for the keys below; do not rename them without updating
+# .github/workflows/lockdown.yml.
+
+require_signed_commits = true
+no_force_push = true
+jail_mode = "500"

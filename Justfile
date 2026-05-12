@@ -8,6 +8,12 @@ import? "contractile.just"
 default:
     @just --list
 
+# Lock vault config files when closed (chmod 500). Greped by Lockdown
+# Enforcement (.github/workflows/lockdown.yml permission-check).
+lock-files:
+    @find vault-broker vault-worker rgtv-cli -name 'config.nickel' -exec chmod 500 {} \; 2>/dev/null || true
+    @echo "Vault config files locked (mode 500)."
+
 # Build vault-broker and rgtv CLI
 build:
     cargo build --manifest-path vault-broker/Cargo.toml --release

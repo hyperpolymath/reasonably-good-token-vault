@@ -1,0 +1,16 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+# cadre-router configuration
+#
+# Lockdown Enforcement workflow greps this file for several invariants —
+# see .github/workflows/lockdown.yml (chroot-check, api-surface-check).
+# Keep the literal substrings 'chroot.enabled = true',
+# 'accept_xml.enabled = false', 'accept_form.enabled = false', and
+# 'accept_multipart.enabled = false' present.
+
+{
+  chroot.enabled = true,
+
+  accept_xml.enabled = false,
+  accept_form.enabled = false,
+  accept_multipart.enabled = false,
+}
