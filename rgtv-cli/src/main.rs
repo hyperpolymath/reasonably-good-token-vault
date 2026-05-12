@@ -92,12 +92,10 @@ struct Config {
 
 impl Config {
     fn from_env() -> Result<Self, String> {
-        let base_url = env::var("RGTV_URL")
-            .unwrap_or_else(|_| "http://127.0.0.1:9100".to_string());
-        let agent_token = env::var("RGTV_AGENT_TOKEN")
-            .map_err(|_| "RGTV_AGENT_TOKEN must be set".to_string())?;
-        let broker_bin = env::var("RGTV_BROKER_BIN")
-            .unwrap_or_else(|_| "vault-broker".to_string());
+        let base_url = env::var("RGTV_URL").unwrap_or_else(|_| "http://127.0.0.1:9100".to_string());
+        let agent_token =
+            env::var("RGTV_AGENT_TOKEN").map_err(|_| "RGTV_AGENT_TOKEN must be set".to_string())?;
+        let broker_bin = env::var("RGTV_BROKER_BIN").unwrap_or_else(|_| "vault-broker".to_string());
         Ok(Config {
             base_url,
             agent_token: Zeroizing::new(agent_token),
@@ -155,7 +153,8 @@ fn get_credentials(cfg: &Config) -> Result<CredentialsResponse, String> {
         .set("Authorization", &bearer(&cfg.agent_token))
         .call()
         .map_err(ureq_err)?;
-    resp.into_json().map_err(|e| format!("parse credentials: {e}"))
+    resp.into_json()
+        .map_err(|e| format!("parse credentials: {e}"))
 }
 
 fn post_grant(cfg: &Config, hint: &str) -> Result<GrantResponse, String> {
@@ -203,7 +202,10 @@ fn log_file() -> PathBuf {
 
 fn write_pid(pid: u32) -> std::io::Result<()> {
     let path = pid_file();
-    fs::create_dir_all(path.parent().expect("invariant: pid_file() path always has a parent"))?;
+    fs::create_dir_all(
+        path.parent()
+            .expect("invariant: pid_file() path always has a parent"),
+    )?;
     let mut f = fs::File::create(&path)?;
     write!(f, "{pid}")
 }
@@ -248,10 +250,7 @@ fn cmd_get(cfg: &Config, args: &[String]) {
         (rest[1].clone(), &rest[2..])
     } else {
         // Default env var name: hint uppercased, dashes and dots → underscores.
-        let default_var = hint
-            .to_uppercase()
-            .replace('-', "_")
-            .replace('.', "_");
+        let default_var = hint.to_uppercase().replace('-', "_").replace('.', "_");
         (default_var, rest)
     };
 
@@ -365,8 +364,10 @@ fn cmd_verify(cfg: &Config, args: &[String]) {
     use zeroize::Zeroize;
     value.zeroize();
 
-    println!("ok — hint '{hint}' is redeemable (grant {}, TTL {}s)",
-        grant.grant_id, grant.expires_in_secs);
+    println!(
+        "ok — hint '{hint}' is redeemable (grant {}, TTL {}s)",
+        grant.grant_id, grant.expires_in_secs
+    );
 }
 
 /// `rgtv audit [--max <n>]`
@@ -417,7 +418,12 @@ fn cmd_daemon_start(cfg: &Config) {
     }
 
     let log_path = log_file();
-    fs::create_dir_all(log_path.parent().expect("invariant: log_file() path always has a parent")).unwrap_or_else(|e| {
+    fs::create_dir_all(
+        log_path
+            .parent()
+            .expect("invariant: log_file() path always has a parent"),
+    )
+    .unwrap_or_else(|e| {
         eprintln!("error: could not create state dir: {e}");
         process::exit(1);
     });
@@ -462,7 +468,10 @@ fn cmd_daemon_start(cfg: &Config) {
     for i in 0..10 {
         std::thread::sleep(Duration::from_secs(1));
         if let Ok(h) = get_health(cfg) {
-            println!("vault-broker ready: {} ({} credentials loaded)", h.status, h.credential_count);
+            println!(
+                "vault-broker ready: {} ({} credentials loaded)",
+                h.status, h.credential_count
+            );
             println!("logs: {}", log_path.display());
             return;
         }
@@ -548,8 +557,8 @@ fn cmd_daemon_status(cfg: &Config) {
 fn cmd_daemon(cfg: &Config, args: &[String]) {
     let sub = args.first().map(String::as_str).unwrap_or("");
     match sub {
-        "start"  => cmd_daemon_start(cfg),
-        "stop"   => cmd_daemon_stop(),
+        "start" => cmd_daemon_start(cfg),
+        "stop" => cmd_daemon_stop(),
         "status" => cmd_daemon_status(cfg),
         other => {
             eprintln!("Unknown daemon sub-command: '{other}'");
@@ -602,11 +611,11 @@ fn main() {
     });
 
     match args[1].as_str() {
-        "get"    => cmd_get(&cfg, &args[2..]),
-        "list"   => cmd_list(&cfg),
+        "get" => cmd_get(&cfg, &args[2..]),
+        "list" => cmd_list(&cfg),
         "status" => cmd_status(&cfg),
         "verify" => cmd_verify(&cfg, &args[2..]),
-        "audit"  => cmd_audit(&args[2..]),
+        "audit" => cmd_audit(&args[2..]),
         "rotate" => cmd_rotate(&args[2..]),
         "daemon" => cmd_daemon(&cfg, &args[2..]),
         "--version" | "version" => println!("rgtv 0.1.0"),

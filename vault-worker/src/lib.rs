@@ -167,11 +167,13 @@ fn check_auth(req: &Request, env: &Env) -> std::result::Result<(), Response> {
         Ok(v) => v.to_string(),
         Err(_) => {
             // Fail closed — if the secret is missing, reject every request.
-            return Err(Response::error(
-                "server misconfigured: RGTV_AGENT_TOKEN not set",
-                500,
-            )
-            .unwrap_or_else(|_| Response::empty().expect("invariant: Response::empty() construction always succeeds")));
+            return Err(
+                Response::error("server misconfigured: RGTV_AGENT_TOKEN not set", 500)
+                    .unwrap_or_else(|_| {
+                        Response::empty()
+                            .expect("invariant: Response::empty() construction always succeeds")
+                    }),
+            );
         }
     };
     let expected = format!("Bearer {token}");
@@ -181,8 +183,9 @@ fn check_auth(req: &Request, env: &Env) -> std::result::Result<(), Response> {
         .unwrap_or_default()
         .unwrap_or_default();
     if auth != expected {
-        Err(Response::error("unauthorized", 401)
-            .unwrap_or_else(|_| Response::empty().expect("invariant: Response::empty() construction always succeeds")))
+        Err(Response::error("unauthorized", 401).unwrap_or_else(|_| {
+            Response::empty().expect("invariant: Response::empty() construction always succeeds")
+        }))
     } else {
         Ok(())
     }
@@ -308,8 +311,7 @@ async fn handle_create_grant(mut req: Request, ctx: RouteContext<()>) -> Result<
     };
 
     // Store the grant record in its DO instance.
-    let body_str = serde_json::to_string(&record)
-        .map_err(|e| Error::RustError(e.to_string()))?;
+    let body_str = serde_json::to_string(&record).map_err(|e| Error::RustError(e.to_string()))?;
     let ns = ctx.durable_object("GRANTS")?;
     let stub = ns.id_from_name(&grant_id)?.get_stub()?;
     stub.fetch_with_request(do_put_request(&body_str)?).await?;

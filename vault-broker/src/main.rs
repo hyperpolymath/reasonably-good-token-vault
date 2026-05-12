@@ -181,7 +181,13 @@ async fn list_credentials(
     headers: HeaderMap,
 ) -> impl IntoResponse {
     if let Err(code) = authenticate(&headers, &state.agent_token) {
-        return (code, Json(ErrorResponse { error: "unauthorized".into() })).into_response();
+        return (
+            code,
+            Json(ErrorResponse {
+                error: "unauthorized".into(),
+            }),
+        )
+            .into_response();
     }
     let mut hints: Vec<String> = state.credentials.keys().cloned().collect();
     hints.sort();
@@ -191,7 +197,11 @@ async fn list_credentials(
 
 async fn health(State(state): State<SharedState>) -> impl IntoResponse {
     let cred_count = state.credentials.len();
-    let grants_active = state.grants.lock().expect("invariant: mutex is not poisoned").len();
+    let grants_active = state
+        .grants
+        .lock()
+        .expect("invariant: mutex is not poisoned")
+        .len();
     info!(cred_count, grants_active, "health check");
     Json(HealthResponse {
         status: "ok",
@@ -209,7 +219,13 @@ async fn create_grant(
     Json(req): Json<GrantRequest>,
 ) -> impl IntoResponse {
     if let Err(code) = authenticate(&headers, &state.agent_token) {
-        return (code, Json(ErrorResponse { error: "unauthorized".into() })).into_response();
+        return (
+            code,
+            Json(ErrorResponse {
+                error: "unauthorized".into(),
+            }),
+        )
+            .into_response();
     }
 
     // Validate hint exists.
@@ -228,7 +244,10 @@ async fn create_grant(
     let expires_at = SystemTime::now() + state.grant_ttl;
 
     {
-        let mut grants = state.grants.lock().expect("invariant: mutex is not poisoned");
+        let mut grants = state
+            .grants
+            .lock()
+            .expect("invariant: mutex is not poisoned");
 
         // Purge expired grants to keep memory tidy.
         let now = SystemTime::now();
@@ -267,12 +286,21 @@ async fn redeem_grant(
     Path(grant_id): Path<String>,
 ) -> impl IntoResponse {
     if let Err(code) = authenticate(&headers, &state.agent_token) {
-        return (code, Json(ErrorResponse { error: "unauthorized".into() })).into_response();
+        return (
+            code,
+            Json(ErrorResponse {
+                error: "unauthorized".into(),
+            }),
+        )
+            .into_response();
     }
 
     // Retrieve and immediately remove the grant.
     let hint = {
-        let mut grants = state.grants.lock().expect("invariant: mutex is not poisoned");
+        let mut grants = state
+            .grants
+            .lock()
+            .expect("invariant: mutex is not poisoned");
         match grants.remove(&grant_id) {
             None => {
                 warn!(%grant_id, "redeem: grant not found or already redeemed");
@@ -344,15 +372,16 @@ async fn redeem_grant(
 async fn main() {
     tracing_subscriber::fmt()
         .with_env_filter(
-            tracing_subscriber::EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| "vault_broker=info,tower_http=warn".parse().expect("invariant: hardcoded filter string is valid")),
+            tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(|_| {
+                "vault_broker=info,tower_http=warn"
+                    .parse()
+                    .expect("invariant: hardcoded filter string is valid")
+            }),
         )
         .init();
 
-    let agent_token = Zeroizing::new(
-        env::var("RGTV_AGENT_TOKEN")
-            .expect("RGTV_AGENT_TOKEN must be set"),
-    );
+    let agent_token =
+        Zeroizing::new(env::var("RGTV_AGENT_TOKEN").expect("RGTV_AGENT_TOKEN must be set"));
     let grant_ttl_secs: u64 = env::var("RGTV_GRANT_TTL_SECS")
         .ok()
         .and_then(|v| v.parse().ok())
@@ -384,6 +413,10 @@ async fn main() {
     let addr = SocketAddr::from(([0, 0, 0, 0, 0, 0, 0, 0], port));
     info!(%addr, grant_ttl_secs, "vault-broker starting");
 
-    let listener = tokio::net::TcpListener::bind(addr).await.expect("invariant: bind to [::]:port succeeds");
-    axum::serve(listener, app).await.expect("invariant: axum server runs until shutdown");
+    let listener = tokio::net::TcpListener::bind(addr)
+        .await
+        .expect("invariant: bind to [::]:port succeeds");
+    axum::serve(listener, app)
+        .await
+        .expect("invariant: axum server runs until shutdown");
 }
