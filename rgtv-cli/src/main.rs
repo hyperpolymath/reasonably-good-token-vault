@@ -250,7 +250,7 @@ fn cmd_get(cfg: &Config, args: &[String]) {
         (rest[1].clone(), &rest[2..])
     } else {
         // Default env var name: hint uppercased, dashes and dots → underscores.
-        let default_var = hint.to_uppercase().replace('-', "_").replace('.', "_");
+        let default_var = hint.to_uppercase().replace(['-', '.'], "_");
         (default_var, rest)
     };
 
