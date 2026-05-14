@@ -4,7 +4,6 @@
 # CODEOWNERS - Require review for all changes.
 
 # Default: require maintainer review for everything
-* @hyperpolymath
 
 # Security-critical paths — reviewer must read SECURITY.adoc before approving.
 /vault-broker/src/    @hyperpolymath
