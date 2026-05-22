@@ -155,4 +155,4 @@ See link:.github/SECURITY.md[SECURITY.md] for responsible disclosure.
 
 == License
 
-By contributing, you agree that your contributions will be licensed under the same license as the project (PMPL-1.0-or-later or MIT, at project maintainers' discretion).
+By contributing, you agree that your contributions will be licensed under the same license as the project (MPL-2.0 or MIT, at project maintainers' discretion).

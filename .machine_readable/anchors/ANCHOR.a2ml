@@ -1,7 +1,7 @@
 # ⚓ ANCHOR: reasonably-good-token-vault
 # This is the canonical authority for the reasonably-good-token-vault repository.
 
-# SPDX-License-Identifier: PMPL-1.0-or-later
+# SPDX-License-Identifier: MPL-2.0
 agent-id = "anchor"
 name: "ANCHOR"
 id: "org.hyperpolymath.reasonably-good-token-vault"

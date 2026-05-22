@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: PMPL-1.0-or-later
+// SPDX-License-Identifier: MPL-2.0
 // SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
 = Reasonably Good Token Vault (RGTV)
 :toc: preamble
@@ -10,7 +10,7 @@
 :description: One-use credential broker for LLM agents. Agents never see raw API tokens; they receive opaque grants and redeem them via a trusted HTTP gateway.
 :keywords: LLM agent security, credential broker, zero-trust, Cloudflare Workers, Durable Objects, Rust, one-use tokens
 
-image:https://img.shields.io/badge/License-PMPL_1.0--or--later-blue.svg[PMPL-1.0-or-later]
+image:https://img.shields.io/badge/License-PMPL_1.0--or--later-blue.svg[MPL-2.0]
 image:https://img.shields.io/badge/Status-Alpha-yellow[Status: Alpha]
 image:https://img.shields.io/badge/Production-NOT%20READY-red[Not production-ready]
 
@@ -142,7 +142,7 @@ Full details in `EXPLAINME.adoc`.
 
 == License
 
-PMPL-1.0-or-later. MPL-2.0 is the automatic legal fallback until PMPL
+MPL-2.0. MPL-2.0 is the automatic legal fallback until PMPL
 achieves formal recognition; platform registries requiring OSI-approved
 licences should use MPL-2.0 explicitly. See `LICENSE` and `PALIMPSEST.adoc`.
 

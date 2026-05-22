@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: PMPL-1.0-or-later
+// SPDX-License-Identifier: MPL-2.0
 // SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
 = RGTV Security Policy
 :toc: preamble
@@ -97,7 +97,7 @@ The following *are* true of the current code and survive this audit:
   Objects (single-threaded runtime serialises concurrent fetches to the
   same DO instance, so `check+delete` is atomic).
 * *Short grant TTL* (5 minutes).
-* *PMPL-1.0-or-later license* on shipping source files; MPL-2.0 is the
+* *MPL-2.0 license* on shipping source files; MPL-2.0 is the
   legal fallback.
 * *Automatic purge of expired grants* on each grant creation in
   `vault-broker`.

@@ -1,4 +1,4 @@
-# SPDX-License-Identifier: PMPL-1.0-or-later
+# SPDX-License-Identifier: MPL-2.0
 # Mustfile — Repository-wide must-rules for RGTV
 #
 # These are non-negotiable invariants. CI's Lockdown Enforcement workflow

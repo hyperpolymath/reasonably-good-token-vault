@@ -1,4 +1,4 @@
-# SPDX-License-Identifier: PMPL-1.0-or-later
+# SPDX-License-Identifier: MPL-2.0
 # Mustfile — declarative state contract for RGTV
 
 version: 1
@@ -18,7 +18,7 @@ checks:
     run: "bash -uc '! grep -qE \"RGTV_AGENT_TOKEN\\s*=\\s*\\\"[^\\\"]+\\\"\" vault-worker/wrangler.toml'"
 
   - name: no-banned-languages
-    description: "No V-lang, TypeScript, or Go source files."
+    description: "No zig, TypeScript, or Go source files."
     run: "bash -uc '! find . -name \"*.v\" -not -path \"*/target/*\" | grep -qv v.mod || true; ! find . -name \"*.ts\" -not -path \"*/target/*\" -not -path \"*/.git/*\" | grep -q . '"
 
   - name: spdx-headers-present

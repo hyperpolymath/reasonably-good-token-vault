@@ -1,4 +1,4 @@
-# SPDX-License-Identifier: PMPL-1.0-or-later
+# SPDX-License-Identifier: MPL-2.0
 # wrangler.toml — Cloudflare Workers deployment for vault-worker (production)
 #
 # This is the production deployment target for RGTV.  Fly.io (vault-broker) is
