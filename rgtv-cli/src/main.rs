@@ -109,52 +109,67 @@ impl Config {
 // ---------------------------------------------------------------------------
 
 /// A short-timeout ureq agent appropriate for interactive CLI calls.
+///
+/// `http_status_as_error(false)` keeps 4xx/5xx as `Ok` responses so the
+/// broker's structured error body can still be surfaced (see `parse_response`).
 fn http_agent() -> ureq::Agent {
-    ureq::AgentBuilder::new()
-        .timeout_read(Duration::from_secs(10))
-        .timeout_write(Duration::from_secs(5))
+    ureq::Agent::config_builder()
+        .timeout_recv_body(Some(Duration::from_secs(10)))
+        .timeout_send_body(Some(Duration::from_secs(5)))
+        .http_status_as_error(false)
         .build()
+        .into()
 }
 
 fn bearer(token: &str) -> String {
     format!("Bearer {token}")
 }
 
-/// Convert a ureq error into a human-readable string, surfacing the broker's
-/// own error message when it returns a structured error body.
+/// Convert a transport-level ureq error into a human-readable string.
+///
+/// HTTP-status errors don't reach this path (see `http_agent`) — they come
+/// back as `Ok` responses whose status code is checked by `parse_response`.
 fn ureq_err(e: ureq::Error) -> String {
-    match e {
-        ureq::Error::Status(code, resp) => {
-            let body = resp.into_string().unwrap_or_default();
-            if let Ok(b) = serde_json::from_str::<BrokerError>(&body) {
-                format!("broker {code}: {}", b.error)
-            } else {
-                format!("broker {code}: {body}")
-            }
+    format!("transport: {e}")
+}
+
+/// Parse a response, surfacing the broker's structured error body on non-2xx.
+fn parse_response<T: serde::de::DeserializeOwned>(
+    mut resp: ureq::http::Response<ureq::Body>,
+    what: &str,
+) -> Result<T, String> {
+    let status = resp.status().as_u16();
+    let body = resp
+        .body_mut()
+        .read_to_string()
+        .map_err(|e| format!("read {what} body: {e}"))?;
+    if !(200..300).contains(&status) {
+        if let Ok(b) = serde_json::from_str::<BrokerError>(&body) {
+            return Err(format!("broker {status}: {}", b.error));
         }
-        ureq::Error::Transport(t) => format!("transport: {t}"),
+        return Err(format!("broker {status}: {body}"));
     }
+    serde_json::from_str(&body).map_err(|e| format!("parse {what}: {e}"))
 }
 
 fn get_health(cfg: &Config) -> Result<HealthResponse, String> {
     let url = format!("{}/health", cfg.base_url);
     let resp = http_agent()
         .get(&url)
-        .set("Authorization", &bearer(&cfg.agent_token))
+        .header("Authorization", bearer(&cfg.agent_token))
         .call()
         .map_err(ureq_err)?;
-    resp.into_json().map_err(|e| format!("parse health: {e}"))
+    parse_response(resp, "health")
 }
 
 fn get_credentials(cfg: &Config) -> Result<CredentialsResponse, String> {
     let url = format!("{}/v1/credentials", cfg.base_url);
     let resp = http_agent()
         .get(&url)
-        .set("Authorization", &bearer(&cfg.agent_token))
+        .header("Authorization", bearer(&cfg.agent_token))
         .call()
         .map_err(ureq_err)?;
-    resp.into_json()
-        .map_err(|e| format!("parse credentials: {e}"))
+    parse_response(resp, "credentials")
 }
 
 fn post_grant(cfg: &Config, hint: &str) -> Result<GrantResponse, String> {
@@ -162,11 +177,10 @@ fn post_grant(cfg: &Config, hint: &str) -> Result<GrantResponse, String> {
     let body = serde_json::json!({ "hint": hint });
     let resp = http_agent()
         .post(&url)
-        .set("Authorization", &bearer(&cfg.agent_token))
-        .set("Content-Type", "application/json")
+        .header("Authorization", bearer(&cfg.agent_token))
         .send_json(body)
         .map_err(ureq_err)?;
-    resp.into_json().map_err(|e| format!("parse grant: {e}"))
+    parse_response(resp, "grant")
 }
 
 /// Redeem a grant and return the credential value wrapped in Zeroizing<String>
@@ -175,10 +189,10 @@ fn post_redeem(cfg: &Config, grant_id: &str) -> Result<Zeroizing<String>, String
     let url = format!("{}/v1/grants/{grant_id}/redeem", cfg.base_url);
     let resp = http_agent()
         .post(&url)
-        .set("Authorization", &bearer(&cfg.agent_token))
-        .call()
+        .header("Authorization", bearer(&cfg.agent_token))
+        .send_empty()
         .map_err(ureq_err)?;
-    let body: RedeemBody = resp.into_json().map_err(|e| format!("parse redeem: {e}"))?;
+    let body: RedeemBody = parse_response(resp, "redeem")?;
     Ok(Zeroizing::new(body.value))
 }
 
