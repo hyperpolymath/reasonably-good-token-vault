@@ -26,12 +26,12 @@ jobs:
     permissions:
       contents: read
       security-events: write
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - language: javascript-typescript
-            build-mode: none
+  strategy:
+    fail-fast: false
+    matrix:
+      include:
+         - language: rust
+          build-mode: default
 
     steps:
       - name: Checkout
