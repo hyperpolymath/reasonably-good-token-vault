@@ -39,7 +39,13 @@ jobs:
           # Trusted bot accounts that don't require signatures
           TRUSTED_BOTS="noreply@anthropic.com github-actions[bot] dependabot[bot]"
 
-          for commit in $(git log --format=%H origin/main..HEAD 2>/dev/null || git log --format=%H -10); do
+          # On a pull_request event, GitHub checks out the simulated
+          # merge commit `refs/pull/N/merge`, which is auto-generated
+          # and not GPG-signed. Skip merge commits (`--no-merges`) so
+          # only real human commits are verified. This was missing the
+          # auto-merge case and rejected every PR on the first push
+          # (saw on PR #89, 2026-05-25).
+          for commit in $(git log --no-merges --format=%H origin/main..HEAD 2>/dev/null || git log --no-merges --format=%H -10); do
             AUTHOR_EMAIL=$(git log -1 --format='%ae' "$commit")
             AUTHOR_NAME=$(git log -1 --format='%an' "$commit")
 
