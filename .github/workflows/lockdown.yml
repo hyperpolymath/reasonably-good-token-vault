@@ -27,6 +27,7 @@ jobs:
   verify-signatures:
     name: Verify Commit Signatures
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
       contents: read
     steps:
@@ -118,6 +119,7 @@ jobs:
   branch-protection:
     name: Enforce Branch Protection
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     # Server-side branch protection rules are the actual gate against direct
     # pushes; this job exists to surface that intent on the PR check page.
     # Running it on `push` events would always fail by design — useless noise
@@ -141,6 +143,7 @@ jobs:
   verify-no-changes:
     name: Verify Authorized Changes Only
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     if: github.event_name == 'pull_request'
     steps:
       - name: Checkout
@@ -188,6 +191,7 @@ jobs:
   fork-check:
     name: Fork Requirements
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     if: github.event_name == 'fork'
     steps:
       - name: Document Fork
@@ -209,6 +213,7 @@ jobs:
   mustfile-compliance:
     name: Mustfile Compliance
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v4
@@ -243,6 +248,7 @@ jobs:
   permission-check:
     name: Verify Lockdown Permissions
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v4
@@ -272,6 +278,7 @@ jobs:
   chroot-check:
     name: Verify Chroot Configuration
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v4
@@ -301,6 +308,7 @@ jobs:
   api-surface-check:
     name: Verify Minimal API Surface
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v4
@@ -332,6 +340,7 @@ jobs:
   lockdown-report:
     name: Lockdown Status Report
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     needs: [verify-signatures, branch-protection, mustfile-compliance, permission-check, chroot-check, api-surface-check]
     if: always()
     steps:
