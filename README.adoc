@@ -1,6 +1,9 @@
-// SPDX-License-Identifier: MPL-2.0
+// SPDX-License-Identifier: CC-BY-SA-4.0
+// Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
 // SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
 = Reasonably Good Token Vault (RGTV)
+image:https://img.shields.io/badge/OpenSSF-Best_Practices-green?logo=openssourcesecurity[OpenSSF Best Practices,link="https://www.bestpractices.dev/en/projects/new?repo_url=https://github.com/hyperpolymath/reasonably-good-token-vault"]
+
 :toc: preamble
 :toclevels: 3
 :icons: font
@@ -10,7 +13,7 @@
 :description: One-use credential broker for LLM agents. Agents never see raw API tokens; they receive opaque grants and redeem them via a trusted HTTP gateway.
 :keywords: LLM agent security, credential broker, zero-trust, Cloudflare Workers, Durable Objects, Rust, one-use tokens
 
-image:https://img.shields.io/badge/License-PMPL_1.0--or--later-blue.svg[MPL-2.0]
+image:https://img.shields.io/badge/License-MPL_2.0-blue.svg[License: MPL-2.0,link="https://opensource.org/licenses/MPL-2.0"]
 image:https://img.shields.io/badge/Status-Alpha-yellow[Status: Alpha]
 image:https://img.shields.io/badge/Production-NOT%20READY-red[Not production-ready]
 
@@ -142,9 +145,9 @@ Full details in `EXPLAINME.adoc`.
 
 == License
 
-MPL-2.0. MPL-2.0 is the automatic legal fallback until PMPL
-achieves formal recognition; platform registries requiring OSI-approved
-licences should use MPL-2.0 explicitly. See `LICENSE` and `PALIMPSEST.adoc`.
+This project is licensed under the Mozilla Public License, v. 2.0. See the `LICENSE` file for details.
+
+SPDX-License-Identifier: CC-BY-SA-4.0
 
 == Contributing
 

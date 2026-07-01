@@ -1,3 +1,7 @@
+<!--
+SPDX-License-Identifier: CC-BY-SA-4.0
+Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+-->
 # TEST-NEEDS.md — reasonably-good-token-vault
 
 ## CRG Grade: D — as of 2026-04-17 (post Svalinn-prune)
