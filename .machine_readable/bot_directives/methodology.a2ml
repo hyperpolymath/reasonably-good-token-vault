@@ -117,7 +117,7 @@ constraints = [
 name = "methodology"
 
 [methodology.state-validation]
-reject-if-contains = ["{{PLACEHOLDER}}", "REASONABLY_GOOD_TOKEN_VAULT", "rsr-template-repo"]
+reject-if-contains = ["{{PLACEHOLDER}}", "{{PROJECT}}", "rsr-template-repo"]
 reject-if-project-name-mismatch = true
 staleness-threshold-days = 90
 fallback-files = ["TODO.md", "TODO.adoc", "ROADMAP.adoc", "README.adoc"]
