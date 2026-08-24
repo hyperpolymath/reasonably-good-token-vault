@@ -1,134 +1,24 @@
-// SPDX-License-Identifier: CC-BY-SA-4.0
-// Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
-// SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
-= RGTV Security Policy
-:toc: preamble
-:icons: font
-:sectnums:
+== Security Policy
 
-[IMPORTANT]
-====
-This replaces a prior SECURITY.adoc that described a never-built
-post-quantum password manager ("Svalinn Vault"). None of the
-Argon2id/Kyber/Dilithium/AirVPN/honeypot/chroot/SELinux mechanisms
-described in the old document exist in the shipping RGTV code. Read the
-rest of this file for the actual security properties.
-====
+=== Supported Versions
 
-== What RGTV is defending against
+[cols=",",options="header",]
+|===
+|Version |Supported
+|main |:white_check_mark:
+|< main |:x:
+|===
 
-The single motivating threat: *an LLM agent accidentally leaking raw
-credential values through its context window, outputs, logs, or downstream
-caches*. An agent that has processed a token string is assumed to have
-leaked it. RGTV confines that exposure by never giving the agent the token
-value — only an opaque one-use grant that a trusted wrapper redeems on the
-agent's behalf.
+=== Reporting a Vulnerability
 
-Concretely, RGTV makes the following claim: *an attacker who reads an
-LLM agent's context window, logs, or scratchpad cannot recover the
-underlying credential value*. They can only recover grant IDs, and a
-grant ID is worthless the instant it is redeemed (or after its TTL
-expires, currently 5 minutes).
+Please report security vulnerabilities through GitHub private
+vulnerability reporting: 1. Go to the *Security* tab 2. Click *Report a
+vulnerability* 3. Fill out the form
 
-== What RGTV is NOT defending against
+We respond within 48 hours.
 
-This list is exhaustive as of 2026-04-17. If your threat model includes
-anything below, *RGTV is not sufficient* — use something else or add
-the missing layer.
+=== Security Measures
 
-* *Compromise of the agent bearer token (`RGTV_AGENT_TOKEN`).* It is a
-  single shared secret across all consumers. Whoever holds it can drain
-  every credential in the vault. Rotating the token requires redeploying
-  every agent.
-* *Compromise of the Cloudflare account or Worker operator.* Credential
-  values in the `CREDENTIALS` KV namespace are *plaintext at rest*. A
-  malicious or compromised operator can `wrangler kv key get` every value
-  directly. AES-256-GCM envelope encryption is planned but *not yet
-  implemented*.
-* *Compromise of the broker/worker host.* Memory dumps of a running
-  `vault-broker` or Durable Object instance will recover live credential
-  values. `Zeroizing<String>` scrubs values on drop, but values are
-  necessarily unencrypted in RAM during redemption.
-* *Replay of a redeemed credential by a compromised wrapper.* Once the
-  trusted wrapper has the plaintext credential, RGTV has no further
-  control. If the wrapper logs the value or sends it back to the agent,
-  the guarantee fails at the wrapper, not at RGTV.
-* *A malicious LLM that exfiltrates grant IDs before redemption.* The
-  attacker can redeem the grant before the wrapper does. Mitigations:
-  short TTL, single-redeem Durable-Object enforcement, audit log to
-  detect the race. Audit log is not yet implemented.
-* *Denial of service.* No rate limiting is implemented.
-* *Quantum adversaries.* RGTV uses no post-quantum primitives anywhere.
-  If a CRQC threat applies to your workload, RGTV does not help.
-* *Side-channel attacks.* No constant-time guarantees, no cache-side-channel
-  defence, no Meltdown/Spectre mitigations beyond what the underlying
-  runtime (Cloudflare Workers, axum on Fly.io) provides by default.
-
-== Current security posture
-
-The following must land before any production deployment. Items are
-tracked in `.machine_readable/6a2/STATE.a2ml` under
-`critical-next-actions`.
-
-. *Envelope encryption of KV-stored credentials.* AES-256-GCM with a master
-  key held as a Cloudflare Worker Secret. Until this lands, KV is a
-  plaintext credential store visible to any CF account reader.
-. *Per-agent bearer tokens with revocation list.* Replace the shared
-  `RGTV_AGENT_TOKEN`.
-. *Durable audit log.* Currently only `tracing` stderr output. Needs
-  file-backed log at minimum, VeriSimDB feed long-term.
-. *Rate limiting* on grant creation and redemption.
-. *Cryptographically secure RNG in `vault-worker`.* Current grant ID
-  generation uses `Math.random()` via the `uuid` WASM fallback. Must route
-  through `crypto.getRandomValues`.
-. *Test battery.* Six minimum-viable cases before shipping: grant→redeem
-  round-trip, double-redeem → 410, expired → 410, wrong token → 401,
-  unknown hint → 404, concurrent-redeem race (single winner).
-. *Remove `.expect("TODO")` from live request handlers* in `vault-broker`.
-
-== Implemented protections
-
-The following *are* true of the current code and survive this audit:
-
-* *`#![forbid(unsafe_code)]`* on `vault-broker`, `vault-worker`, and
-  `rgtv-cli`. Zero `unsafe` blocks.
-* *`Zeroizing<String>`* wraps every credential value in every Rust
-  component — heap scrubbed on drop.
-* *Single-redeem atomicity* in `vault-worker` via Cloudflare Durable
-  Objects (single-threaded runtime serialises concurrent fetches to the
-  same DO instance, so `check+delete` is atomic).
-* *Short grant TTL* (5 minutes).
-* *MPL-2.0 license* on shipping source files; MPL-2.0 is the
-  legal fallback.
-* *Automatic purge of expired grants* on each grant creation in
-  `vault-broker`.
-* *IPv6 dual-stack bind* on `vault-broker`.
-* *Correct HTTP semantics*: 401 on bad token, 404 on unknown hint,
-  410 Gone on expired/redeemed grant.
-
-== Reporting a security issue
-
-Email: j.d.a.jewell@open.ac.uk. Include:
-
-* Affected component (`vault-broker`, `vault-worker`, `rgtv-cli`, or all).
-* Affected version or git commit SHA.
-* Reproduction steps or exploit PoC.
-* Any CVSS score you've computed (not required).
-
-Please do *not* file a public GitHub issue for anything exploitable. I
-aim to acknowledge reports within 72 hours and disclose fixes publicly
-once patches ship.
-
-Vulnerabilities in the *Svalinn-era legacy code* (now deleted from this
-repo) are out of scope — those crates did not compile and were never
-released. Reports against `vault-core/`, `vault-core-ats/`, or
-`vault-interface/` will be closed as N/A.
-
-== Supply-chain posture
-
-* Rust dependencies: `cargo audit` is run in CI (`.github/workflows/`).
-* Actions: SHA-pinned.
-* SBOM: not yet generated. Planned.
-* Formal verification: not yet started. Planned Idris2 ABI + Zig FFI work
-  is referenced in `.machine_readable/6a2/META.a2ml` as
-  aspirational; none of it exists in shipping code.
+* Dependabot for dependency updates
+* CodeQL for code scanning
+* Secret scanning and push protection
