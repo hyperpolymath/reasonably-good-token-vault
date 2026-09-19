@@ -151,4 +151,4 @@ SPDX-License-Identifier: CC-BY-SA-4.0
 
 == Contributing
 
-See `CONTRIBUTING.adoc`. Security issues: see `SECURITY.adoc`.
+See `.github/CONTRIBUTING.md`. Security issues: see `SECURITY.adoc`.
