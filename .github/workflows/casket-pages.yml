@@ -21,7 +21,12 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # A cold `cabal build` of casket-ssg took 21m51s on ubuntu-latest (run
+    # 26728514663), and GHCup setup adds about 2 min. With a 15-minute limit
+    # the build was always cancelled. Its Cabal cache is saved only when the
+    # job succeeds, so the cache was never written and every run started cold.
+    # Once one run completes, the warm build takes seconds.
+    timeout-minutes: 40
     steps:
       - name: Checkout
         uses: actions/checkout@v6.0.2
