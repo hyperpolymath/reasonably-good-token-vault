@@ -27,7 +27,10 @@ jobs:
           errors=0
           for f in .github/workflows/*.yml .github/workflows/*.yaml; do
             [ -f "$f" ] || continue
-            if ! head -1 "$f" | grep -q "SPDX-License-Identifier"; then
+            # gh actions-lock prepends its own comment, so line 1 is no
+            # longer the licence. Require the licence in the leading
+            # comment block, before the workflow body (as rsr-template-repo).
+            if ! awk '/^# SPDX-License-Identifier:/ { found=1 } /^[^#[:space:]]/ { exit } END { exit !found }' "$f"; then
               echo "ERROR: $f missing SPDX header"
               errors=$((errors + 1))
             fi
