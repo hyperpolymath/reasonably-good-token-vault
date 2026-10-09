@@ -1,0 +1,415 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+// SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+= AFFIRMATION — reasonably-good-token-vault, as of 2026-10-07
+:toc: preamble
+:toc-title: Contents
+:icons: font
+:doctype: article
+:sha: 6baae4fbed7d310c0ea998485b5f6460839ac314
+:repo-url: https://github.com/hyperpolymath/reasonably-good-token-vault
+Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+
+== What this is, and how it works
+
+reasonably-good-token-vault (RGTV) is an alpha credential broker for AI
+agents. It is three separate Rust crates, with no cargo workspace and one
+`Cargo.lock` each. `vault-broker` is an axum HTTP server. It loads credential
+values from `RGTV_CRED_<HINT>` environment variables, issues single-use,
+time-limited grants, and hands a value back once per grant. `vault-worker` is
+the same idea as a Cloudflare Worker, built with workers-rs for
+`wasm32-unknown-unknown`. It keeps grants in a Durable Object and values in KV.
+`rgtv-cli` is a client that redeems a grant and runs a command with the value
+in its environment. The README already says the code is not post-quantum, not
+formally verified, and not a password manager. This file checks that, and
+everything else it says, against runs made at one commit.
+
+== The epistemic contract
+
+You may conclude:
+
+* what the commands in <<reproduce>> printed at the commit in <<anchor>>, on
+  the toolchain recorded there;
+* where a statement is marked _source reading_, that the line cited says what
+  is quoted. It was not exercised at run time.
+
+You may not conclude:
+
+* that anything works at run time beyond what is listed under
+  <<solid>>. The broker could not be started (see <<refuted>>), so no HTTP
+  behaviour of either server was observed;
+* anything about CI. No CI run on this commit was queried;
+* anything about a Cloudflare or Fly.io deployment. Neither was attempted;
+* that the absence of a finding means the absence of a defect. Every search
+  below states its scope.
+
+[[anchor]]
+== Verifiable anchor
+
+[cols="1,3", options="header"]
+|===
+| Field | Value
+
+| Repo
+| `hyperpolymath/reasonably-good-token-vault` (formerly "Svalinn Vault")
+
+| Branch
+| `docs/affirmation-2026-10-07`, a worktree branch created at `origin/main`.
+  `origin/main` resolved to the same commit when the checks ran.
+
+| Commit (HEAD)
+| `6baae4fbed7d310c0ea998485b5f6460839ac314`
+
+| Permalink
+| {repo-url}/tree/{sha}[]
+
+| Verified (UTC)
+| `2026-10-07T11:06:39Z` (the last run). The runs span
+  `2026-10-07T10:42:15Z` to `2026-10-07T11:06:39Z`.
+
+| Working-tree delta at verification
+| Clean. `git status --short` printed nothing after the builds, so no lockfile
+  was rewritten. Build output went to a `target/` inside the worktree, which
+  was deleted before the last runs of `just aspect` and `just must-check`. That
+  directory changes the result of `must-spdx-headers` (see <<refuted>>). This
+  file was the only untracked path when it was written.
+
+| Toolchain
+| rustc 1.99.0 (b940084d7 2026-09-28, LLVM 23.1.1), cargo 1.99.0, clippy
+  0.1.99, rustfmt 1.10.0-stable, rustup toolchain
+  `stable-x86_64-unknown-linux-gnu`, with the `wasm32-unknown-unknown` target
+  installed. just 1.56.0, git 2.47.3, bash 5.2.37, cargo-audit 0.22.2 (advisory
+  database at commit f246cde705ec, 2026-10-07T08:23:44Z, 1293 advisories),
+  asciidoctor 2.0.26. Debian 13 on WSL2, x86_64.
+|===
+
+[WARNING]
+====
+If you are reading this at a later commit, the claims may have drifted. Re-run
+the reproduction steps and write a fresh affirmation; do not trust a stale one.
+====
+
+Locked versions that the claims depend on: axum 0.8.9, tokio (full), uuid
+1.27.0, zeroize 1.9.0 (broker); ureq 3.4.2, rustls 0.23.37 on ring 0.17.14
+(CLI); worker 0.8.7, uuid 1.27.0 (worker). The lockfiles hold 129, 95 and 111
+packages for broker, CLI and worker respectively.
+
+== Companion documents and repo metadata (cross-check)
+
+Read these against this file. Each disagreement was found in this session.
+
+[cols="2,3,3", options="header"]
+|===
+| Document | Says | This session found
+
+| `README.adoc` l.127–130
+| Quickstart: `just broker-run`, `just cli-grant-create`,
+  `just cli-grant-redeem`
+| None of the three recipes exists: `just --summary`, which includes the
+  imported `contractile.just`, lists none of them. The nearest are
+  `broker-dev` and `broker-start`, and the broker aborts at startup anyway.
+
+| `README.adoc` l.105–107; `vault-worker/Cargo.toml` l.24
+| The `js` feature makes Worker UUIDs use `Math.random()`, which is not
+  cryptographically secure
+| Stale, by source reading. In uuid 1.27.0, `src/rng.rs` maps the `js` feature
+  on `wasm32-unknown-unknown` to a vendored Web Crypto backend
+  (`crypto.getRandomValues`), and the file contains no `Math` at all. The
+  lockfile has no `uuid-rng-internal`, so the `rng-getrandom` and `rng-rand`
+  arms are off and the Web Crypto arm is the one compiled. Not exercised at
+  run time.
+
+| `README.adoc` l.114
+| `.expect("TODO")` in live request handlers
+| The text now reads `.expect("invariant: mutex is not poisoned")` at
+  `vault-broker/src/main.rs` l.203, 250 and 303. It still panics if the mutex is
+  poisoned, so the substance stands and only the quoted text is stale.
+
+| `README.adoc` l.112, `TEST-NEEDS.adoc` l.26
+| A double redeem should return 410
+| By source reading it returns 404: `grants.remove()` at `main.rs` l.304 runs
+  before the `g.redeemed` arm at l.315, so that arm can never match.
+
+| `EXPLAINME.adoc` l.43, l.46
+| axum 0.7, ureq 2
+| `Cargo.lock` has axum 0.8.9 and ureq 3.4.2.
+
+| `EXPLAINME.adoc` l.49
+| UUID v4 is "Cryptographically random; 122 bits of entropy"
+| Holds for both crates by source reading: getrandom on Linux for the broker,
+  Web Crypto for the worker. Only l.50, which repeats the `Math.random()`
+  claim, is stale.
+
+| `EXPLAINME.adoc` l.63, l.136
+| `contractiles/` holds a Dustfile; deploy with `./deploy-fly.sh`
+| The path is `.machine_readable/contractiles/`. There is no Dustfile and no
+  `deploy-fly.sh` anywhere in the tree.
+
+| `.machine_readable/6a2/STATE.a2ml` l.18–41
+| 45% complete. "vault-broker: axum HTTP server" 100%, `deploy-fly.sh` 100%,
+  honeypot 20%
+| The broker panics before it binds (see <<refuted>>). `deploy-fly.sh` is
+  absent. A search of every `.rs` file for "honeypot" found nothing.
+
+| Repo metadata
+| Descriptive metadata in `.machine_readable/6a2/*.a2ml` and
+  `0-AI-MANIFEST.a2ml`
+| There is no `*_chora.deed`. Estate ruling D308 retired the a2ml form; this
+  repo has not been migrated. Recorded, not changed.
+
+| `SECURITY.adoc` l.18–24
+| Dependabot, CodeQL, secret scanning; a reply within 48 hours
+| `.github/dependabot.yml` covers the three cargo directories. `codeql.yml`
+  analyses `actions` only, so no Rust code is scanned. Secret scanning and the
+  response time were not checked.
+
+| `.github/workflows/governance.yml` l.14
+| A standalone `rust-ci` workflow carries the load-bearing build
+| No such workflow exists among the 17 files in `.github/workflows/`. None of
+  them runs `cargo build`, `cargo test` or `cargo clippy`, and neither does
+  `governance-reusable.yml` at the pinned standards commit `fad242d3`.
+
+| `TEST-NEEDS.adoc` l.3–6
+| CRG grade D, no automated tests
+| Confirmed: 0 tests in each of the three crates.
+
+| `mise.toml`
+| Declares node, python, go, java, deno, npm, yarn, pip, pytest, jest and
+  others at "latest"
+| Conflicts with the estate language policy. The file is untrusted on this
+  machine, so its shims refuse to run.
+
+| Licensing
+| `LICENSES/` (AGPL, CC-BY-SA, MPL), `license/PMPL-1.0.txt`, `PALIMPSEST.adoc`
+| Three licence families side by side. Not adjudicated here: licence questions
+  are the owner's alone.
+|===
+
+== The honest state (one breath)
+
+All three crates compile and pass their lint gates, except that the worker
+fails clippy with one error. There are no tests anywhere. The broker binary
+aborts at startup on its own router, so the server path that the README,
+STATE.a2ml and the CLI daemon all depend on cannot be used at this commit.
+Nothing in the dependency graph is post-quantum.
+
+[[solid]]
+=== What is solid (and how we checked)
+
+[cols="3,3", options="header"]
+|===
+| Claim | Evidence
+
+| The broker and CLI build in release mode
+| `just build`: rc=0, 0 warnings. vault-broker in 2m 26s, rgtv in 2m 48s.
+
+| The worker builds for wasm32
+| `cargo build --locked --release --target wasm32-unknown-unknown
+  --manifest-path vault-worker/Cargo.toml`: rc=0, 0 warnings.
+  `worker-build` and `wrangler` are not installed, so the deployable bundle was
+  not produced.
+
+| Broker and CLI are lint-clean
+| `just check` (fmt `--check` and clippy `-D warnings` on both): rc=0.
+
+| Worker formatting is clean
+| `cargo fmt --manifest-path vault-worker/Cargo.toml --check`: rc=0.
+
+| `unsafe` is forbidden in broker and CLI
+| `#![forbid(unsafe_code)]` at `vault-broker/src/main.rs` l.29 and once in
+  `rgtv-cli/src/main.rs`. `grep -c` finds it 0 times in
+  `vault-worker/src/lib.rs`.
+
+| Credential values are held in `Zeroizing<String>`
+| Source reading: `main.rs` l.57, 71, 143, 358. Not verified at run time, and
+  zeroize gives no guarantee about copies made by serde, axum or the OS.
+
+| The CLI runs and fails loudly
+| `rgtv` with no arguments prints usage and exits 1. `rgtv status` against a
+  closed port prints "broker unreachable … Connection refused" and exits 1.
+
+| `audit` and `rotate` are honest stubs
+| Source reading: `rgtv-cli/src/main.rs` l.386–410 print "not yet
+  implemented" and exit 2. The usage text labels both "(TODO)".
+
+| No secret files at the root, and the must checks pass
+| `just trust-verify`: rc=0. `just must-check` on a clean tree: rc=0. Both
+  pass partly by vacuity (see <<refuted>>).
+|===
+
+=== The honest nuance you must not lose
+
+* *"Tests pass" means zero tests.* `just test` exits 0 with `running 0 tests`
+  for vault-broker and rgtv. `cargo test` on the worker (native target, not
+  part of `just test`) also exits 0 with 0 unit tests and 0 doctests. A green
+  `just test` is no evidence of behaviour.
+* *Green lint is not a working server.* The broker passes `-D warnings` and
+  still aborts at startup. Clippy does not run the router.
+* *No post-quantum cryptography, and no claim of it.* A search of all three
+  lockfiles for `kyber`, `dilithium`, `ml-kem`, `mlkem`, `ml-dsa`, `pqcrypto`,
+  `oqs` and `aws-lc` found nothing. The CLI's TLS is rustls on ring.
+  Which key-exchange groups it negotiates was not tested.
+* *The broker speaks plain HTTP on all interfaces.* Source reading: it binds
+  `[::]:9100` (`main.rs` l.25, 392, 418) with no TLS. The bearer token and
+  every redeemed value cross that socket unencrypted unless something in front
+  of it adds TLS.
+* *Credentials are stored as plaintext.* Source reading: the broker comment
+  "hint → encrypted value" (`main.rs` l.72) describes values read verbatim
+  from environment variables. `vault-worker/wrangler.toml` l.41 says "hint →
+  plaintext credential value", and l.43 records encryption as not yet done.
+* *The bearer check is not constant-time.* Source reading: `auth != expected`
+  at `vault-broker/src/main.rs` l.164 and `vault-worker/src/lib.rs` l.186. It
+  is an ordinary string comparison.
+* *The cargo-audit result is bounded by its database.* The run used the advisory
+  database at 2026-10-07T08:23:44Z. A later advisory will not appear here.
+
+=== Known-incomplete but honestly fenced
+
+These gaps are stated openly in the repo's own files or CLI output. None is
+hidden behind a claim of completeness, and the first fails loudly:
+
+* `rgtv audit` and `rgtv rotate` exit 2 with "not yet implemented".
+* KV namespace ids in `vault-worker/wrangler.toml` are literal
+  `REPLACE_WITH_CREDENTIALS_NAMESPACE_ID` placeholders, visible to anyone who
+  reads the file. Whether a deploy with them fails was not tested.
+* Idris2 proofs and a Zig FFI layer are listed at 0% in STATE.a2ml l.37–38.
+  Nothing in this file implies either exists.
+
+[[refuted]]
+=== Outstanding / weak / refuted (no spin)
+
+. *The broker aborts at startup. Refuted: "vault-broker: axum HTTP server
+  100%".* Run with a planted dummy credential and token on port 39117,
+  `target/release/vault-broker` logged one "registered credential" line, then
+  panicked at `src/main.rs:410:10` with "Path segments must not start with
+  `:`. For capture groups, use `{capture}`." Exit code 134. The route
+  `/v1/grants/:grant_id/redeem` uses axum 0.7 syntax, and axum 0.8 rejects it
+  when the router is built. Because the broker never bound a port, the README
+  quickstart, `rgtv daemon start` and the Fly.io container all lead to a
+  process that dies. The grant → redeem → redeem probe planned for this session
+  could not run.
+. *Double redeem returns 404, not 410* (source reading, see the cross-check
+  table). The broker's 410 "already redeemed" arm is dead code.
+. *The worker fails clippy.* `cargo clippy --locked --target
+  wasm32-unknown-unknown --manifest-path vault-worker/Cargo.toml -- -D warnings`
+  exits 101 with 1 error, `needless_borrows_for_generic_args`, around
+  `vault-worker/src/lib.rs` l.299–302. `just check` claims to cover "all Rust
+  crates" but checks only broker and CLI, so it never sees this.
+. *A medium advisory against the CLI.* `cargo audit --file
+  rgtv-cli/Cargo.lock` exits 1: RUSTSEC-2026-0285, rustls 0.23.37, "TLS 1.3
+  handshake messages incorrectly accepted across encryption level boundaries",
+  severity 5.3. The fix is rustls 0.23.45 or later. Broker and worker exit 0,
+  each with one allowed warning, RUSTSEC-2026-0190 (anyhow, unsoundness in
+  `Error::downcast_mut()`). cargo-deny is installed but was not run.
+. *`just aspect` fails.* It exits 141 twice, once with `target/` present and
+  once on a clean tree. The first check pipes `grep -r` into `head -n 1` under
+  `set -o pipefail`. grep has 98 matching lines to write, receives SIGPIPE when
+  head exits, and pipefail turns that into failure. A standalone reproduction
+  gave `PIPESTATUS=141 0`. The failure may depend on timing. Even when it
+  passes, it proves only that one file somewhere has an SPDX line.
+. *Gates that pass by vacuity:*
+** `trust-container-images-pinned` checks only a root `Containerfile`. The real
+   one is `vault-broker/Containerfile`, and both of its `FROM` lines
+   (`rust:1.85-slim-bookworm`, `debian:bookworm-slim`) carry no `@sha256`
+   digest.
+** `trust-no-secrets-committed` checks three fixed names at the root only.
+** `must-spdx-headers` inspects only the first 20 `.rs` files that `find`
+   returns, including build output. With `target/` present it failed (rc=1,
+   13 serde and thiserror build-script files lack headers). With `target/`
+   deleted it passed. All 3 tracked `.rs` files have the header.
+. *Configuration that points at nothing.* `crg-grade` reads `READINESS.md`,
+  which does not exist. `dependabot.yml` l.61 configures a `nix` ecosystem, but
+  there is no flake and Nix is banned in the estate. `governance.yml` names a
+  `rust-ci` workflow that does not exist. No CI on this repo builds or tests the
+  Rust code.
+. *Documented gaps that do not fail at all.* There is no rate limiting, no
+  audit log, and one shared bearer token for every agent (README
+  "known-unsafe" list; STATE.a2ml l.39–41 at 0%). The README fences these in
+  prose, but nothing in the code refuses a request because of them.
+. *Not run, and why:*
+** `just build-worker` and `worker-dev`: `worker-build` and `wrangler` are not
+   installed.
+** The Containerfile build: no container runtime was used.
+** CI conclusions on this commit: not queried.
+** Any Cloudflare or Fly.io deployment.
+** cargo-deny.
+
+[[reproduce]]
+== Reproduce it yourself
+
+On this machine `mise.toml` is untrusted and its shims shadow cargo. Do *not*
+run `mise trust`: it would activate the banned toolchains declared there.
+Strip mise from `PATH` instead. Run `must-check` before building, or keep the
+target directory outside the tree, because `target/` changes its result.
+
+[source,bash]
+----
+git clone https://github.com/hyperpolymath/reasonably-good-token-vault.git
+cd reasonably-good-token-vault
+git checkout 6baae4fbed7d310c0ea998485b5f6460839ac314
+export PATH="$(echo "$PATH" | tr ':' '\n' | grep -v mise | paste -sd:)"
+export CARGO_TARGET_DIR="$PWD/target"   # one target dir for all three crates
+
+just must-check        # expect rc=0, "All must checks passed"
+just trust-verify      # expect rc=0, "All trust verifications passed"
+just aspect            # observed rc=141 (SIGPIPE under pipefail)
+
+just build             # expect rc=0, broker and rgtv release builds
+just check             # expect rc=0 (broker and CLI only)
+just test              # expect rc=0, "running 0 tests" twice
+
+cargo build --locked --release --target wasm32-unknown-unknown \
+  --manifest-path vault-worker/Cargo.toml          # expect rc=0
+cargo clippy --locked --target wasm32-unknown-unknown \
+  --manifest-path vault-worker/Cargo.toml -- -D warnings   # expect rc=101
+cargo test --locked --manifest-path vault-worker/Cargo.toml  # 0 tests
+
+for c in vault-broker rgtv-cli vault-worker; do
+  cargo audit --file "$c/Cargo.lock"; echo "rc=$?"
+done   # expect 0, 1 (RUSTSEC-2026-0285), 0
+
+RGTV_AGENT_TOKEN=planted-test-token \
+RGTV_CRED_DUMMY_HINT=dummy-value-not-a-secret RGTV_PORT=39117 \
+  timeout 10 ./target/release/vault-broker; echo "rc=$?"
+# expect rc=134: panicked at src/main.rs:410:10,
+# "Path segments must not start with `:`"
+
+grep -inE 'kyber|dilithium|ml-kem|mlkem|ml-dsa|pqcrypto|oqs|aws-lc' \
+  */Cargo.lock; echo "rc=$?"    # expect rc=1, no matches
+----
+
+== One-line characterisation (quote this)
+
+At 6baae4f, RGTV is an alpha, untested, non-post-quantum credential broker
+whose three crates compile, but whose broker binary aborts at startup on an
+axum 0.7 route under axum 0.8, so its documented quickstart cannot run.
+
+== Joint attestation
+
+Engineering party (AI)::
+  Claude, model `claude-opus-5-5`, ran every command reported here between
+  `2026-10-07T10:42:15Z` and `2026-10-07T11:06:39Z` in a worktree at commit
+  `6baae4fbed7d310c0ea998485b5f6460839ac314`. The wording is a faithful report
+  of those runs and of the source lines cited. Where a statement rests on
+  reading source rather than running it, it says so. Nothing was copied from a
+  previous affirmation, because none existed. The AI party did not commit, sign
+  or push this file.
+
+Owner / maintainer::
+  Jonathan D.A. Jewell, who signs by committing this file with `-S`
+  (`id_ed25519_signing`). The commit must sit directly on
+  `6baae4fbed7d310c0ea998485b5f6460839ac314`; if it lands on any other parent,
+  read this file as a draft.
+
+[source,bash]
+----
+git add AFFIRMATION.adoc
+git commit -S -s AFFIRMATION.adoc \
+  -m "docs: affirm state at 6baae4fbed7d310c0ea998485b5f6460839ac314"
+git log --show-signature -1
+----
+
+[WARNING]
+====
+Do not use `--no-verify`. The pre-commit hook enforces the SPDX header, and an
+affirmation landed past its own repo's gates is self-refuting.
+====
