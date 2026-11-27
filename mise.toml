@@ -2,7 +2,7 @@
 # Language runtimes
 rust = "latest"
 zig = "latest"
-bun = "latest"
+bun = "1.4"
 denojs = "latest"
 
 # Package managers
@@ -38,10 +38,10 @@ description = "Install pinned JS dev tools (Prettier) from bun.lock"
 run = "bun install --frozen-lockfile"
 
 [tasks.build]
-run = "cargo build --release"
+run = "cargo build --release --manifest-path vault-broker/Cargo.toml && cargo build --release --manifest-path rgtv-cli/Cargo.toml"
 
 [tasks.test]
-run = "cargo test"
+run = "cargo test --manifest-path vault-broker/Cargo.toml && cargo test --manifest-path rgtv-cli/Cargo.toml"
 
 [tasks.lint]
 depends = ["setup"]
