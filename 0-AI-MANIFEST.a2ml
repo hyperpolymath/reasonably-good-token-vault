@@ -78,7 +78,7 @@ bot-directives = ".machine_readable/bot_directives/"
 [invariants]
 scm-files-location = ".machine_readable/ ONLY — never root"
 container-file = "Containerfile — never Dockerfile"
-package-manager = "Deno preferred — never npm"
+package-manager = "Bun first (package.json + bun.lock) — never npm"
 license = "MPL-2.0"
 
 [session-startup]
