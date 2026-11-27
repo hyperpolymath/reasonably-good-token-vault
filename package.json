@@ -1,1 +1,8 @@
-{"devDependencies":{"prettier":"3.10.1"},"license":"MPL-2.0","name":"reasonably-good-token-vault","private":true}
+{
+  "devDependencies": {
+    "prettier": "3.10.1"
+  },
+  "license": "MPL-2.0",
+  "name": "reasonably-good-token-vault",
+  "private": true
+}
